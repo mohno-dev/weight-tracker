@@ -38,9 +38,12 @@
     background:var(--bg); color:var(--ink); width:100%;
   }
   input[type=number]{font-variant-numeric:tabular-nums}
-  /* 主役は体重・体脂肪。日付は既定で今日が入るので、2行目に補助として置く */
-  .f-num{flex:1 1 96px}
-  #i-date{width:auto; font-size:13px; color:var(--sub); padding:7px 8px; background:transparent}
+  /* ラベルを左に置いて1行にまとめる（日付／体重・体脂肪率 の2行） */
+  .inline{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+  /* ラベルも入力欄も本文と同じ文字サイズに揃える */
+  .inline label{margin:0; flex:0 0 auto; white-space:nowrap; font-size:inherit}
+  .inline input[type=number]{flex:1 1 76px; min-width:0}
+  .inline input[type=date]{flex:0 0 auto; width:auto}
   button{font:inherit; font-weight:700; border:0; border-radius:9px; padding:10px 14px; cursor:pointer}
   .primary{background:var(--navy); color:#fff}
   .ghost{background:transparent; color:var(--blue); border:1px solid var(--line); font-weight:600; padding:7px 11px}
@@ -81,13 +84,18 @@
 
 <!-- 入力 -->
 <div class="card">
-  <div class="row">
-    <div class="f-num"><label>体重 kg</label><input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20"></div>
-    <div class="f-num"><label>体脂肪 %</label><input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0"></div>
+  <div class="inline">
+    <label for="i-date">日付</label>
+    <input type="date" id="i-date">
+  </div>
+  <div class="inline">
+    <label for="i-w">体重</label>
+    <input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20">
+    <label for="i-f">体脂肪率</label>
+    <input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0">
     <button class="primary" id="add">記録</button>
   </div>
   <div class="toolbar">
-    <input type="date" id="i-date">
     <button class="ghost" id="sync">体組成計から取り込む</button>
   </div>
   <div class="muted" id="hint" style="margin-top:8px"></div>
