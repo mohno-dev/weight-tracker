@@ -38,9 +38,9 @@
     background:var(--bg); color:var(--ink); width:100%;
   }
   input[type=number]{font-variant-numeric:tabular-nums}
-  /* 主役は体重・体脂肪。日付は既定で今日が入るので控えめにする */
-  .f-date{flex:0 1 124px} .f-num{flex:1 1 84px}
-  #i-date{font-size:13px; color:var(--sub); padding-left:8px; padding-right:8px}
+  /* 主役は体重・体脂肪。日付は既定で今日が入るので、2行目に補助として置く */
+  .f-num{flex:1 1 96px}
+  #i-date{width:auto; font-size:13px; color:var(--sub); padding:7px 8px; background:transparent}
   button{font:inherit; font-weight:700; border:0; border-radius:9px; padding:10px 14px; cursor:pointer}
   .primary{background:var(--navy); color:#fff}
   .ghost{background:transparent; color:var(--blue); border:1px solid var(--line); font-weight:600; padding:7px 11px}
@@ -60,8 +60,10 @@
   .pace{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
   .pill{font-size:12px; padding:5px 10px; border-radius:999px; background:var(--bg); color:var(--sub)}
   .pill b{color:var(--ink); font-variant-numeric:tabular-nums}
-  table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:14px}
-  th,td{text-align:right; padding:7px 6px; border-bottom:1px dotted var(--line)}
+  /* 記録一覧は列が多い。狭い画面ではページ全体を広げず、表の中だけ横スクロールさせる */
+  #list{overflow-x:auto; -webkit-overflow-scrolling:touch}
+  table{width:100%; min-width:302px; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:13px}
+  th,td{text-align:right; padding:6px 5px; border-bottom:1px dotted var(--line); white-space:nowrap}
   th{color:var(--sub); font-weight:600; font-size:12px; text-align:right}
   th:first-child,td:first-child{text-align:left}
   td .del{color:var(--sub); background:transparent; padding:2px 8px; font-weight:400; font-size:16px; line-height:1}
@@ -80,12 +82,12 @@
 <!-- 入力 -->
 <div class="card">
   <div class="row">
-    <div class="f-date"><label>日付</label><input type="date" id="i-date"></div>
     <div class="f-num"><label>体重 kg</label><input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20"></div>
     <div class="f-num"><label>体脂肪 %</label><input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0"></div>
     <button class="primary" id="add">記録</button>
   </div>
   <div class="toolbar">
+    <input type="date" id="i-date">
     <button class="ghost" id="sync">体組成計から取り込む</button>
   </div>
   <div class="muted" id="hint" style="margin-top:8px"></div>
