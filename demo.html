@@ -122,6 +122,16 @@
       <button data-g="m">月平均</button>
     </div>
   </div>
+  <div class="row" style="justify-content:space-between; align-items:center; margin-top:8px">
+    <div class="seg" id="range">
+      <button data-r="m1">1ヶ月</button>
+      <button data-r="m3">3ヶ月</button>
+      <button data-r="m6">6ヶ月</button>
+      <button data-r="y1">1年</button>
+      <button data-r="all" class="on">全部</button>
+    </div>
+  </div>
+  <div class="muted" id="period" style="margin-top:8px"></div>
   <div class="chartwrap"><canvas id="chart"></canvas></div>
 </div>
 
@@ -165,7 +175,7 @@ const DEF_SET={ h:170, wmax:75, fmax:20, ffmi:20, sc:"体重取得" };
 
 let data = load(KEY, []);          // [{date:"YYYY-MM-DD", w:Number, f:Number|null}]
 let set  = Object.assign({}, DEF_SET, load(SKEY, {}));
-let metric="w", gran="w";
+let metric="w", gran="w", range="all";
 
 function load(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }
 function store(){ localStorage.setItem(KEY, JSON.stringify(data)); localStorage.setItem(SKEY, JSON.stringify(set)); }
@@ -188,10 +198,22 @@ function isoWeekKey(d){ // 月曜起点。"YYYY-Www" と週の月曜日付を返
   return `${y}-${m}-${dd}`; // その週の月曜日（ソート・表示に使える）
 }
 function monthKey(d){ return d.slice(0,7)+"-01"; }
-function groupAvg(g, m){
+// グラフに映す期間（直近N日）。最新の記録を基準にする（今日でなく）
+const RANGE_DAYS={m1:30, m3:90, m6:182, y1:365};
+function latestDate(){
+  return data.length ? data.reduce((a,e)=>e.date>a?e.date:a, data[0].date) : todayStr();
+}
+function visibleData(){
+  const days=RANGE_DAYS[range];
+  if(!days || !data.length) return data;
+  const from=addDays(latestDate(), -days);
+  return data.filter(e=>e.date>=from);
+}
+
+function groupAvg(g, m, rows){
   const keyf = g==="w"?isoWeekKey : g==="m"?monthKey : (d=>d);
   const bins={};
-  for(const e of data){
+  for(const e of (rows||data)){
     const v=val(e,m); if(v==null) continue;
     const k=keyf(e.date); (bins[k]??=[]).push(v);
   }
@@ -303,9 +325,10 @@ function drawChart(){
               navy:css.getPropertyValue('--navy').trim(), red:css.getPropertyValue('--red').trim(),
               gold:css.getPropertyValue('--gold').trim() };
 
-  // 系列（選択粒度）＋日次点（薄く）
-  const series = gran==="d"? dailySeries(metric) : groupAvg(gran, metric);
-  const daily  = dailySeries(metric);
+  // 選んだ期間だけを描く
+  const rows = visibleData();
+  const series = gran==="d"? dailySeries(metric, rows) : groupAvg(gran, metric, rows);
+  const daily  = dailySeries(metric, rows);
   if(series.length===0){ c.fillStyle=col.sub; c.font="13px "+CFONT; c.textAlign="center";
     c.fillText("データを入れるとグラフが出ます", W/2, H/2); return; }
 
@@ -357,15 +380,50 @@ function drawChart(){
   c.fillStyle=col.navy; c.font="bold 12px "+CFONT; c.textAlign="right"; c.textBaseline="bottom";
   c.fillText(r2(last.v)+M_UNIT[metric], gx+gw, Y(last.v)-6);
 
-  // Xラベル（端＋中央）
-  c.fillStyle=col.sub; c.font="10px "+CFONT; c.textAlign="center"; c.textBaseline="top";
-  const fmtX=d=> gran==="m"? d.slice(0,7) : d.slice(5);
-  c.fillText(fmtX(series[0].date), X(0), gy+gh+4);
-  if(series.length>2) c.fillText(fmtX(series[Math.floor((series.length-1)/2)].date), X(Math.floor((series.length-1)/2)), gy+gh+4);
-  c.textAlign="right"; c.fillText(fmtX(last.date), gx+gw, gy+gh+4);
+  // Xラベル（最大5個・等間隔）。両端は枠内に収まるよう寄せる
+  c.fillStyle=col.sub; c.font="10px "+CFONT; c.textBaseline="top";
+  const fmtX=d=> gran==="m" ? d.slice(0,4)+"/"+(+d.slice(5,7)) : (+d.slice(5,7))+"/"+(+d.slice(8,10));
+  const nlab=Math.min(5, series.length);
+  for(let i=0;i<nlab;i++){
+    const idx = nlab===1 ? 0 : Math.round((series.length-1)*i/(nlab-1));
+    const first=(i===0), lastLab=(i===nlab-1);
+    c.textAlign = first?"left" : lastLab?"right" : "center";
+    c.fillText(fmtX(series[idx].date), first?gx : lastLab?gx+gw : X(idx), gy+gh+4);
+  }
+
+  // なぞった位置の点を示す（投資アプリのクロスヘア）
+  let picked=null;
+  if(hoverX!=null){
+    let bi=0, bd=Infinity;
+    series.forEach((p,i)=>{ const d=Math.abs(X(i)-hoverX); if(d<bd){ bd=d; bi=i; } });
+    picked=series[bi];
+    const px=X(bi), py=Y(picked.v);
+    c.strokeStyle=col.sub; c.lineWidth=1; c.setLineDash([3,3]);
+    c.beginPath(); c.moveTo(px,gy); c.lineTo(px,gy+gh); c.stroke(); c.setLineDash([]);
+    c.fillStyle=col.card; c.beginPath(); c.arc(px,py,6,0,7); c.fill();
+    c.strokeStyle=col.blue; c.lineWidth=2.5; c.beginPath(); c.arc(px,py,5,0,7); c.stroke();
+  }
+  renderPeriod(series, picked);
 }
-function dailySeries(m){
-  return data.filter(e=>val(e,m)!=null).map(e=>({date:e.date, v:val(e,m)})).sort((a,b)=>a.date<b.date?-1:1);
+function dailySeries(m, rows){
+  return (rows||data).filter(e=>val(e,m)!=null).map(e=>({date:e.date, v:val(e,m)})).sort((a,b)=>a.date<b.date?-1:1);
+}
+// グラフの上の行。ふだんは「期間と増減」、なぞっている間はその日の値。
+// X軸だけでは年が分からないので、ここで期間を明示する。
+function renderPeriod(series, picked){
+  const el=document.getElementById("period");
+  if(!series || !series.length){ el.textContent=""; return; }
+  const jp=d=>`${d.slice(0,4)}/${+d.slice(5,7)}/${+d.slice(8,10)}`;
+  const u=M_UNIT[metric];
+
+  if(picked){
+    el.innerHTML=`<b>${jp(picked.date)}</b>　<b style="font-size:16px">${r2(picked.v)}</b>${u}`;
+    return;
+  }
+  const a=series[0].v, b=series[series.length-1].v, d=b-a;
+  const col = Math.abs(d)<0.005 ? "var(--sub)" : (d>0 ? "var(--gold)" : "var(--blue)");
+  el.innerHTML=`${jp(series[0].date)} 〜 ${jp(series[series.length-1].date)}`
+    + `　<b style="color:${col}">${d>0?"+":""}${r2(d)}${u}</b>`;
 }
 
 // ---- 入力・操作 ----
@@ -396,6 +454,8 @@ document.getElementById("metric").onclick=e=>{ const b=e.target.closest("button"
   metric=b.dataset.m; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
 document.getElementById("gran").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
   gran=b.dataset.g; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
+document.getElementById("range").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
+  range=b.dataset.r; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
 
 // 設定
 function fillSettings(){ document.getElementById("s-h").value=set.h; document.getElementById("s-wmax").value=set.wmax;
@@ -526,6 +586,30 @@ document.getElementById("import").onchange=ev=>{
   };
   rd.readAsText(file);
 };
+
+// グラフを指でなぞると、その日の値を上に出す（離すと期間表示に戻る）
+let hoverX=null;
+(function(){
+  const cv=document.getElementById("chart");
+  const at=ev=>{
+    const t=ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+    hoverX=t.clientX-cv.getBoundingClientRect().left;
+    drawChart();
+  };
+  const off=()=>{ if(hoverX!==null){ hoverX=null; drawChart(); } };
+  cv.addEventListener("mousemove", at);
+  cv.addEventListener("mouseleave", off);
+  // 縦スクロールを奪わないよう、横に動かしている間だけ拾う
+  let sx=null, sy=null, tracking=false;
+  cv.addEventListener("touchstart", e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=false; }, {passive:true});
+  cv.addEventListener("touchmove", e=>{
+    const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
+    if(!tracking && dx>6 && dx>dy) tracking=true;
+    if(tracking){ e.preventDefault(); at(e); }
+  }, {passive:false});
+  cv.addEventListener("touchend", off);
+  cv.addEventListener("touchcancel", off);
+})();
 
 window.addEventListener("resize", drawChart);
 fillSettings();
