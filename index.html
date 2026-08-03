@@ -148,7 +148,7 @@
 
 <!-- 一覧 -->
 <div class="card">
-  <details open>
+  <details>
     <summary>記録一覧 <span class="muted" id="count"></span></summary>
     <div id="list" style="margin-top:10px"></div>
   </details>
@@ -351,7 +351,8 @@ function renderList(){
   const el=document.getElementById("list");
   document.getElementById("count").textContent = data.length? `（${data.length}件）` : "";
   if(!data.length){ el.innerHTML=`<div class="empty">まだ記録がありません。毎朝トイレ後・同じ条件で1つ入れていきましょう。</div>`; return; }
-  const rows=data.slice(0,60).map(e=>{
+  const SHOW=14;                       // 一覧は直近だけ。過去はグラフで見る
+  const rows=data.slice(0,SHOW).map(e=>{
     const l=lbm(e), fi=ffmi(e);
     return `<tr>
       <td>${e.date}</td>
@@ -363,7 +364,7 @@ function renderList(){
     </tr>`;}).join("");
   el.innerHTML=`<table>
     <tr><th>日付</th><th>体重</th><th>体脂肪</th><th>除脂肪</th><th>FFMI</th><th></th></tr>
-    ${rows}</table>` + (data.length>60?`<div class="muted" style="margin-top:6px">直近60件を表示</div>`:"");
+    ${rows}</table>` + (data.length>SHOW?`<div class="muted" style="margin-top:6px">直近${SHOW}件を表示（全${data.length}件）。過去はグラフで。</div>`:"");
 }
 
 // ---- canvas 折れ線（最大2系列・単位が違えば左右2軸） ----
@@ -527,7 +528,8 @@ function renderPeriod(ss, picked){
   const p0=ss[0].pts, from=p0[0].date, to=p0[p0.length-1].date;
   const diff=ss.map(s=>{
     const d=s.pts[s.pts.length-1].v - s.pts[0].v;
-    return `<b style="color:${s.color}">${d>0?"+":""}${r2(d)}${s.unit}</b>`;
+    const t = Math.abs(d)<0.005 ? "±0" : (d>0?"+":"")+r2(d);   // 丸めて0のとき「+0」と出さない
+    return `<b style="color:${s.color}">${t}${s.unit}</b>`;
   }).join("　");
   el.innerHTML=`${jp(from)} 〜 ${jp(to)}　${diff}`;
 }
