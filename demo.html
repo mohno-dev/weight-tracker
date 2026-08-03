@@ -75,11 +75,11 @@
   details summary::-webkit-details-marker{display:none}
   .setgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
   .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  /* 一番上は最新値。手入力は折りたたみの中 */
-  .latest{display:flex; align-items:baseline; gap:4px 10px; flex-wrap:wrap}
-  .latest .big{font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.5px}
+  /* 一番上は最新値。日付を左上に置き、その下に数値。手入力は折りたたみの中 */
+  .latest .when{font-size:13px; color:var(--sub); margin-bottom:3px}
+  .latest .vals{display:flex; align-items:baseline; gap:4px 12px; flex-wrap:wrap}
+  .latest .big{font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.5px}
   .latest .u{font-size:13px; color:var(--sub)}
-  .latest .when{font-size:13px; color:var(--sub); margin-left:auto}
   .empty{text-align:center; color:var(--sub); padding:20px 0; font-size:13px}
 </style>
 </head>
@@ -291,9 +291,10 @@ function renderLatest(){
   const el=document.getElementById("latest");
   const e=data[0];                                   // data は新しい順
   if(!e){ el.innerHTML=`<span class="muted">まだ記録がありません</span>`; return; }
-  el.innerHTML=`<span class="big">${r2(e.w)}</span><span class="u">kg</span>`
+  el.innerHTML=`<div class="when">${e.date.slice(0,4)}/${+e.date.slice(5,7)}/${+e.date.slice(8,10)}</div>`
+    + `<div class="vals"><span class="big">${r2(e.w)}</span><span class="u">kg</span>`
     + (e.f!=null ? `<span class="big">${r1(e.f)}</span><span class="u">%</span>` : "")
-    + `<span class="when">${e.date.slice(0,4)}/${+e.date.slice(5,7)}/${+e.date.slice(8,10)}</span>`;
+    + `</div>`;
 }
 
 function renderStats(){
