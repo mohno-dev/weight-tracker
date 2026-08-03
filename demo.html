@@ -59,7 +59,9 @@
   .seg button.on{background:var(--card); color:var(--navy); box-shadow:0 1px 2px rgba(0,0,0,.08)}
   @media (prefers-color-scheme: dark){ .seg button.on{color:var(--blue)} }
   .chartwrap{position:relative; width:100%; height:230px; margin-top:10px}
-  canvas{width:100%; height:100%; display:block}
+  /* touch-action:pan-y ＝ 縦スクロールはブラウザに任せ、横方向の指の動きはこちらで使う。
+     これが無いと、指が少し縦にブレただけでスクロールに持っていかれ、なぞれなくなる */
+  canvas{width:100%; height:100%; display:block; touch-action:pan-y}
   .pace{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
   .pill{font-size:12px; padding:5px 10px; border-radius:999px; background:var(--bg); color:var(--sub)}
   .pill b{color:var(--ink); font-variant-numeric:tabular-nums}
@@ -698,14 +700,9 @@ let hoverX=null;
   const off=()=>{ if(hoverX!==null){ hoverX=null; drawChart(); } };
   cv.addEventListener("mousemove", at);
   cv.addEventListener("mouseleave", off);
-  // 縦スクロールを奪わないよう、横に動かしている間だけ拾う
-  let sx=null, sy=null, tracking=false;
-  cv.addEventListener("touchstart", e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=false; }, {passive:true});
-  cv.addEventListener("touchmove", e=>{
-    const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
-    if(!tracking && dx>6 && dx>dy) tracking=true;
-    if(tracking){ e.preventDefault(); at(e); }
-  }, {passive:false});
+  // 触れた瞬間から値を出す。縦スクロールは CSS の touch-action:pan-y でブラウザに任せる
+  cv.addEventListener("touchstart", at, {passive:true});
+  cv.addEventListener("touchmove", at, {passive:true});
   cv.addEventListener("touchend", off);
   cv.addEventListener("touchcancel", off);
 })();
