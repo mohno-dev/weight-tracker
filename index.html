@@ -75,6 +75,11 @@
   details summary::-webkit-details-marker{display:none}
   .setgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
   .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  /* 一番上は最新値。手入力は折りたたみの中 */
+  .latest{display:flex; align-items:baseline; gap:4px 10px; flex-wrap:wrap}
+  .latest .big{font-size:30px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.5px}
+  .latest .u{font-size:13px; color:var(--sub)}
+  .latest .when{font-size:13px; color:var(--sub); margin-left:auto}
   .empty{text-align:center; color:var(--sub); padding:20px 0; font-size:13px}
 </style>
 </head>
@@ -84,21 +89,25 @@
 
 <!-- 入力 -->
 <div class="card">
-  <div class="inline">
-    <label for="i-date">日付</label>
-    <input type="date" id="i-date">
-  </div>
-  <div class="inline">
-    <label for="i-w">体重</label>
-    <input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20">
-    <label for="i-f">体脂肪率</label>
-    <input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0">
-    <button class="primary" id="add">記録</button>
-  </div>
+  <div class="latest" id="latest"></div>
   <div class="toolbar">
     <button class="ghost" id="sync">体組成計から取り込む</button>
   </div>
   <div class="muted" id="hint" style="margin-top:8px"></div>
+  <details style="margin-top:10px">
+    <summary>手で入力する</summary>
+    <div class="inline" style="margin-top:10px">
+      <label for="i-date">日付</label>
+      <input type="date" id="i-date">
+    </div>
+    <div class="inline">
+      <label for="i-w">体重</label>
+      <input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20">
+      <label for="i-f">体脂肪率</label>
+      <input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0">
+      <button class="primary" id="add">記録</button>
+    </div>
+  </details>
 </div>
 
 <!-- サマリ -->
@@ -118,7 +127,7 @@
     </div>
     <div class="seg" id="gran">
       <button data-g="d">日次</button>
-      <button data-g="w" class="on">週平均</button>
+      <button data-g="w" class="on">7日平均</button>
       <button data-g="m">月平均</button>
     </div>
   </div>
@@ -221,6 +230,28 @@ function groupAvg(g, m, rows){
   }
   return Object.keys(bins).sort().map(k=>({date:k, v:bins[k].reduce((a,b)=>a+b,0)/bins[k].length, n:bins[k].length}));
 }
+// 7日移動平均。その日を含む直近7日の「実測」の平均。
+// 測っていない日には点を作らない（無い値を作らないため）。n＝その平均に使った実測の数。
+function movingAvg(m, src, win){
+  const s=dailySeries(m, src);                       // 実測のみ・昇順
+  const T=d=>+new Date(d+"T00:00:00");
+  const out=[];
+  for(let i=0;i<s.length;i++){
+    const from=T(s[i].date)-(win-1)*86400000;
+    let sum=0, n=0;
+    for(let j=i;j>=0;j--){ if(T(s[j].date)<from) break; sum+=s[j].v; n++; }
+    out.push({date:s[i].date, v:sum/n, n});
+  }
+  return out;
+}
+// 表示する期間で切り出す。平均そのものは全データから計算する（期間の左端が痩せないように）
+function movingInRange(m, rows, win){
+  if(!rows.length) return [];
+  let from=rows[0].date;
+  for(const e of rows) if(e.date<from) from=e.date;
+  return movingAvg(m, data, win).filter(p=>p.date>=from);
+}
+
 // 直近N件の平均（生データ・降順の先頭から）
 function recentAvg(m, days){
   const cutoff=addDays(todayStr(), -days);
@@ -243,7 +274,7 @@ function slopePerWeek(m){
 // ---- 描画 ----
 function render(){
   data.sort((a,b)=>a.date<b.date?1:-1); // 一覧は新しい順
-  renderMode(); renderStats(); renderPace(); renderList(); drawChart();
+  renderMode(); renderLatest(); renderStats(); renderPace(); renderList(); drawChart();
   store();
 }
 
@@ -255,15 +286,25 @@ function renderMode(){
   else { el.className="mode flat"; el.textContent="維持"; }
 }
 
+// 一番上＝最新の記録（手入力は折りたたみの中なので、ここは見るだけ）
+function renderLatest(){
+  const el=document.getElementById("latest");
+  const e=data[0];                                   // data は新しい順
+  if(!e){ el.innerHTML=`<span class="muted">まだ記録がありません</span>`; return; }
+  el.innerHTML=`<span class="big">${r2(e.w)}</span><span class="u">kg</span>`
+    + (e.f!=null ? `<span class="big">${r1(e.f)}</span><span class="u">%</span>` : "")
+    + `<span class="when">${e.date.slice(0,4)}/${+e.date.slice(5,7)}/${+e.date.slice(8,10)}</span>`;
+}
+
 function renderStats(){
   const latest=data[0]; // 新しい順の先頭
-  const wWeek=recentAvg("w",7), wMonth=recentAvg("w",30);
+  const wWeek=recentAvg("w",7), wMonth=recentAvg("w",30), fWeek=recentAvg("f",7);
   const l = latest?lbm(latest):null, fi = latest?ffmi(latest):null;
   const wRoom = wWeek!=null? set.wmax-wWeek : null;   // 上限体重までの余裕（週平均基準）
   const cells=[
-    ["最新", latest?r2(latest.w):"—", "kg", latest?latest.date.slice(5):"—", false],
     ["週平均", wWeek!=null?r2(wWeek):"—", "kg", "直近7日", true],
     ["月平均", wMonth!=null?r2(wMonth):"—", "kg", "直近30日", true],
+    ["体脂肪", fWeek!=null?r1(fWeek):"—", "%", "直近7日", true],
     ["除脂肪", l!=null?r2(l):"—", "kg", latest&&latest.f!=null?"":"要 体脂肪", false],
     ["FFMI", fi!=null?r1(fi):"—", "", `目標 ${set.ffmi}`, false],
     ["上限まで", wRoom!=null?(wRoom>=0?r2(wRoom):r2(wRoom)):"—", "kg", `${set.wmax}kg`, false, wRoom!=null&&wRoom<0],
@@ -286,8 +327,6 @@ function renderPace(){
   const ms=groupAvg("m","w");
   if(ms.length>=2){ const d=ms[ms.length-1].v-ms[ms.length-2].v;
     p.push(`前月比 <b>${d>=0?'+':''}${r2(d)}</b> kg`); }
-  const fWeek=recentAvg("f",14);
-  if(fWeek!=null) p.push(`体脂肪 週 <b>${r1(fWeek)}</b>%`);
   // 計画の目安（年1.33kg=月0.11kg）
   if(sw!=null){ const perMonth=sw*4.345;
     const tag = Math.abs(perMonth)<=0.2? "計画ペース内" : (perMonth>0.2? "増加が速い" : "減少が速い");
@@ -334,7 +373,9 @@ function drawChart(){
   const LIM={w:()=>set.wmax, f:()=>set.fmax, ffmi:()=>set.ffmi};
   const ss=metrics.map((m,i)=>({
     m, unit:M_UNIT[m], label:M_LABEL[m], color:(i===0?C1:C2),
-    pts: gran==="d"? dailySeries(m,rows) : groupAvg(gran,m,rows),
+    pts: gran==="d" ? dailySeries(m,rows)
+       : gran==="w" ? movingInRange(m,rows,7)        // 7日移動平均（欠測を自然に吸収する）
+       : groupAvg("m",m,rows),
     daily: dailySeries(m,rows),
     limit: LIM[m] ? LIM[m]() : null,
   })).filter(s=>s.pts.length);
@@ -407,8 +448,11 @@ function drawChart(){
     c.strokeStyle=s.color; c.lineWidth=2.4; c.lineJoin="round"; c.beginPath();
     s.pts.forEach((p,i)=>{ const x=X(p.date), y=s.ax.Y(p.v); i?c.lineTo(x,y):c.moveTo(x,y); });
     c.stroke();
-    c.fillStyle=s.color;
-    s.pts.forEach(p=>{ c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 3, 0, 7); c.fill(); });
+    // 実測が少ない点は薄くする（週に2日しか測っていない、が見て分かるように）
+    s.pts.forEach(p=>{
+      c.fillStyle = (p.n!=null && p.n<4) ? s.color+"66" : s.color;
+      c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 3, 0, 7); c.fill();
+    });
   });
 
   // X ラベル（時間で等間隔に5個）
