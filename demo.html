@@ -47,6 +47,8 @@
   button{font:inherit; font-weight:700; border:0; border-radius:9px; padding:10px 14px; cursor:pointer}
   .primary{background:var(--navy); color:#fff}
   .ghost{background:transparent; color:var(--blue); border:1px solid var(--line); font-weight:600; padding:7px 11px}
+  /* CSV読み込みはボタンに見せている label。label 既定の小さい文字と下余白を打ち消す */
+  label.ghost{font-size:inherit; margin-bottom:0}
   .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
   .stat{background:var(--bg); border-radius:10px; padding:10px 8px; text-align:center}
   .stat .v{font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.3px}
