@@ -726,15 +726,42 @@ fillSettings();
 render();
 
 // 起動時：ショートカットが付けた #hp=... を読む（ショートカット起点の場合）
+//
+// ブラウザによって、フラグメントが素のまま来たり％エンコードされて来たり、
+// ショートカット側で既にエンコードされて二重になっていたりする。
+// どれで来ても読めるよう、候補を順に試して最初に JSON になったものを採る。
+function hpCandidates(rawFragment){
+  const out=[], seen=new Set();
+  let s=rawFragment;
+  for(let i=0;i<3;i++){
+    if(!seen.has(s)){ out.push(s); seen.add(s); }
+    let d;
+    try{ d=decodeURIComponent(s); }catch(e){ break; }   // ％の使い方が不正なら打ち切る
+    if(d===s) break;                                     // これ以上ほどけない
+    s=d;
+  }
+  return out;
+}
 (function(){
   const h=location.hash||"";
   if(!h.startsWith("#hp=")) return;
-  let text;
-  try{ text=decodeURIComponent(h.slice(4)); }
-  catch(e){ document.getElementById("hint").textContent="URLを読めませんでした。"; return; }
+  const raw=h.slice(4);
   // 二重取り込みを防ぐため、読んだらフラグメントを消す（file:// では失敗しうるので握りつぶす）
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){ location.hash=""; }
-  applyHP(text);
+
+  // 「JSON として成立するか」だけで候補を選ぶ。
+  // 中身がエラー応答（{"error":...}）でも JSON なら applyHP に渡し、
+  // API のエラー内容をそのまま伝える（読めなかったのとは別物）。
+  const cands=hpCandidates(raw);
+  for(const t of cands){
+    let ok=false;
+    try{ const p=JSON.parse(t); ok = !!p && typeof p==="object" && !Array.isArray(p); }catch(e){}
+    if(ok){ applyHP(t); return; }
+  }
+  // どれも JSON にならなかった：受け取った中身の先頭を出す（原因が分かるように）
+  const head=(cands[cands.length-1]||"").slice(0,60);
+  document.getElementById("hint").textContent=
+    "取り込めませんでした：JSONとして読めませんでした。受け取った先頭60文字→ "+head;
 })();
 </script>
 </body>
