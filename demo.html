@@ -175,7 +175,7 @@ const DEF_SET={ h:170, wmax:75, fmax:20, ffmi:20, sc:"体重取得" };
 
 let data = load(KEY, []);          // [{date:"YYYY-MM-DD", w:Number, f:Number|null}]
 let set  = Object.assign({}, DEF_SET, load(SKEY, {}));
-let metric="w", gran="w", range="all";
+let metrics=["w"], gran="w", range="all";   // グラフに出す項目（最大2）
 
 function load(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }
 function store(){ localStorage.setItem(KEY, JSON.stringify(data)); localStorage.setItem(SKEY, JSON.stringify(set)); }
@@ -206,8 +206,10 @@ function latestDate(){
 function visibleData(){
   const days=RANGE_DAYS[range];
   if(!days || !data.length) return data;
-  const from=addDays(latestDate(), -days);
-  return data.filter(e=>e.date>=from);
+  // 起点は今日。ただしその期間に記録が1件も無ければ、最新の記録から遡る（空にしない）
+  let out=data.filter(e=>e.date>=addDays(todayStr(), -days));
+  if(!out.length) out=data.filter(e=>e.date>=addDays(latestDate(), -days));
+  return out;
 }
 
 function groupAvg(g, m, rows){
@@ -312,7 +314,7 @@ function renderList(){
     ${rows}</table>` + (data.length>60?`<div class="muted" style="margin-top:6px">直近60件を表示</div>`:"");
 }
 
-// ---- canvas 折れ線 ----
+// ---- canvas 折れ線（最大2系列・単位が違えば左右2軸） ----
 function drawChart(){
   const cv=document.getElementById("chart"); const wrap=cv.parentElement;
   const dpr=window.devicePixelRatio||1;
@@ -323,107 +325,154 @@ function drawChart(){
   const col={ ink:css.getPropertyValue('--ink').trim(), sub:css.getPropertyValue('--sub').trim(),
               line:css.getPropertyValue('--line').trim(), blue:css.getPropertyValue('--blue').trim(),
               navy:css.getPropertyValue('--navy').trim(), red:css.getPropertyValue('--red').trim(),
-              gold:css.getPropertyValue('--gold').trim() };
+              gold:css.getPropertyValue('--gold').trim(), card:css.getPropertyValue('--card').trim() };
+  // ダークのときネイビーは沈むのでブルーで描く
+  const dark=matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches;
+  const C1=dark?col.blue:col.navy, C2=col.gold;
 
-  // 選んだ期間だけを描く
-  const rows = visibleData();
-  const series = gran==="d"? dailySeries(metric, rows) : groupAvg(gran, metric, rows);
-  const daily  = dailySeries(metric, rows);
-  if(series.length===0){ c.fillStyle=col.sub; c.font="13px "+CFONT; c.textAlign="center";
-    c.fillText("データを入れるとグラフが出ます", W/2, H/2); return; }
+  const rows=visibleData();
+  const LIM={w:()=>set.wmax, f:()=>set.fmax, ffmi:()=>set.ffmi};
+  const ss=metrics.map((m,i)=>({
+    m, unit:M_UNIT[m], label:M_LABEL[m], color:(i===0?C1:C2),
+    pts: gran==="d"? dailySeries(m,rows) : groupAvg(gran,m,rows),
+    daily: dailySeries(m,rows),
+    limit: LIM[m] ? LIM[m]() : null,
+  })).filter(s=>s.pts.length);
 
-  const pad={l:38,r:10,t:12,b:22};
+  if(!ss.length){
+    c.fillStyle=col.sub; c.font="13px "+CFONT; c.textAlign="center";
+    c.fillText("データを入れるとグラフが出ます", W/2, H/2);
+    renderPeriod(null,null); return;
+  }
+
+  const twoAxis = ss.length===2 && ss[0].unit!==ss[1].unit;
+  const pad={l:38, r:(twoAxis?40:10), t:(ss.length>1?24:12), b:22};
   const gx=pad.l, gw=W-pad.l-pad.r, gy=pad.t, gh=H-pad.t-pad.b;
 
-  // Y範囲（上限ラインも含める）
-  let vals=series.map(p=>p.v).concat(daily.map(p=>p.v));
-  let limit=null;
-  if(metric==="w") limit=set.wmax; else if(metric==="f") limit=set.fmax; else if(metric==="ffmi") limit=set.ffmi;
-  if(limit!=null) vals.push(limit);
-  let mn=Math.min(...vals), mx=Math.max(...vals);
-  if(mn===mx){ mn-=1; mx+=1; } const padv=(mx-mn)*0.12; mn-=padv; mx+=padv;
-  const X=i=> series.length===1? gx+gw/2 : gx + gw*i/(series.length-1);
-  const Y=v=> gy + gh*(1-(v-mn)/(mx-mn));
+  // X は「点の順番」でなく日付で置く。順番だと欠測があるときラベルの間隔が不揃いになる
+  const T=d=>+new Date(d+"T00:00:00");
+  let t0=Infinity, t1=-Infinity;
+  ss.forEach(s=>s.pts.forEach(p=>{ const v=T(p.date); if(v<t0)t0=v; if(v>t1)t1=v; }));
+  const span=(t1-t0)||0;
+  const X=d=> span? gx+gw*((T(d)-t0)/span) : gx+gw/2;
 
-  // グリッド＋Yラベル
-  c.font="10px "+CFONT; c.textAlign="right"; c.textBaseline="middle";
-  for(let i=0;i<=4;i++){ const v=mn+(mx-mn)*i/4, y=Y(v);
+  // 軸の値域（単位が同じ系列は1つの軸を共有する）
+  function scaleOf(list){
+    let vals=[];
+    list.forEach(s=>{
+      vals=vals.concat(s.pts.map(p=>p.v));
+      if(gran!=="d") vals=vals.concat(s.daily.map(p=>p.v));
+      if(s.limit!=null) vals.push(s.limit);
+    });
+    let mn=Math.min(...vals), mx=Math.max(...vals);
+    if(mn===mx){ mn-=1; mx+=1; }
+    const pv=(mx-mn)*0.12; mn-=pv; mx+=pv;
+    return {mn, mx, Y:v=> gy+gh*(1-(v-mn)/(mx-mn))};
+  }
+  const axL = scaleOf(twoAxis? [ss[0]] : ss);
+  const axR = twoAxis? scaleOf([ss[1]]) : null;
+  ss.forEach((s,i)=> s.ax = (twoAxis && i===1) ? axR : axL);
+
+  // グリッドと Y ラベル
+  c.font="10px "+CFONT; c.textBaseline="middle";
+  for(let i=0;i<=4;i++){
+    const y=gy+gh*(1-i/4);
     c.strokeStyle=col.line; c.lineWidth=1; c.beginPath(); c.moveTo(gx,y); c.lineTo(gx+gw,y); c.stroke();
-    c.fillStyle=col.sub; c.fillText((metric==="ffmi"?r1(v):r1(v)), gx-6, y); }
+    c.textAlign="right"; c.fillStyle=twoAxis?ss[0].color:col.sub;
+    c.fillText(r1(axL.mn+(axL.mx-axL.mn)*i/4), gx-6, y);
+    if(twoAxis){
+      c.textAlign="left"; c.fillStyle=ss[1].color;
+      c.fillText(r1(axR.mn+(axR.mx-axR.mn)*i/4), gx+gw+6, y);
+    }
+  }
 
-  // 上限ライン（赤破線）
-  if(limit!=null && limit>=mn && limit<=mx){
-    const y=Y(limit); c.strokeStyle=col.red; c.lineWidth=1.5; c.setLineDash([5,4]);
+  // 上限ライン（1つ目の系列のものだけ。2本出すと読みにくい）
+  const s0=ss[0];
+  if(s0.limit!=null && s0.limit>=s0.ax.mn && s0.limit<=s0.ax.mx){
+    const y=s0.ax.Y(s0.limit);
+    c.strokeStyle=col.red; c.lineWidth=1.5; c.setLineDash([5,4]);
     c.beginPath(); c.moveTo(gx,y); c.lineTo(gx+gw,y); c.stroke(); c.setLineDash([]);
-    c.fillStyle=col.red; c.textAlign="left"; c.fillText("上限 "+r1(limit), gx+2, y-7);
+    c.fillStyle=col.red; c.textAlign="left"; c.textBaseline="bottom";
+    c.fillText("上限 "+r1(s0.limit), gx+2, y-3); c.textBaseline="middle";
   }
 
-  // 日次点（粒度が日次でない時、背景に薄く）
-  if(gran!=="d"){
-    const dmap={}; series.forEach((p,i)=>dmap[p.date]=i);
-    // 日次を series の x スケールに載せるため、日付→最近傍indexで近似配置
-    const first=series[0].date, last=series[series.length-1].date;
-    const span=(new Date(last)-new Date(first))||1;
-    c.fillStyle=col.blue+"33";
-    daily.forEach(p=>{ const t=(new Date(p.date)-new Date(first))/span;
-      const x=gx+gw*Math.max(0,Math.min(1,t)); c.beginPath(); c.arc(x,Y(p.v),2,0,7); c.fill(); });
-  }
+  // 均した線を見ているときは、日々の点を背景に薄く出す
+  if(gran!=="d") ss.forEach(s=>{
+    c.fillStyle=s.color+"33";
+    s.daily.forEach(p=>{ c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 2, 0, 7); c.fill(); });
+  });
 
-  // 主系列（線＋点）
-  c.strokeStyle=col.navy; c.lineWidth=2.4; c.lineJoin="round"; c.beginPath();
-  series.forEach((p,i)=>{ const x=X(i),y=Y(p.v); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
-  c.fillStyle=col.navy;
-  series.forEach((p,i)=>{ c.beginPath(); c.arc(X(i),Y(p.v),3,0,7); c.fill(); });
+  // 線と点
+  ss.forEach(s=>{
+    c.strokeStyle=s.color; c.lineWidth=2.4; c.lineJoin="round"; c.beginPath();
+    s.pts.forEach((p,i)=>{ const x=X(p.date), y=s.ax.Y(p.v); i?c.lineTo(x,y):c.moveTo(x,y); });
+    c.stroke();
+    c.fillStyle=s.color;
+    s.pts.forEach(p=>{ c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 3, 0, 7); c.fill(); });
+  });
 
-  // 最新値ラベル
-  const last=series[series.length-1];
-  c.fillStyle=col.navy; c.font="bold 12px "+CFONT; c.textAlign="right"; c.textBaseline="bottom";
-  c.fillText(r2(last.v)+M_UNIT[metric], gx+gw, Y(last.v)-6);
-
-  // Xラベル（最大5個・等間隔）。両端は枠内に収まるよう寄せる
+  // X ラベル（時間で等間隔に5個）
   c.fillStyle=col.sub; c.font="10px "+CFONT; c.textBaseline="top";
-  const fmtX=d=> gran==="m" ? d.slice(0,4)+"/"+(+d.slice(5,7)) : (+d.slice(5,7))+"/"+(+d.slice(8,10));
-  const nlab=Math.min(5, series.length);
-  for(let i=0;i<nlab;i++){
-    const idx = nlab===1 ? 0 : Math.round((series.length-1)*i/(nlab-1));
-    const first=(i===0), lastLab=(i===nlab-1);
-    c.textAlign = first?"left" : lastLab?"right" : "center";
-    c.fillText(fmtX(series[idx].date), first?gx : lastLab?gx+gw : X(idx), gy+gh+4);
+  const fmtX=ms=>{ const d=new Date(ms);
+    return gran==="m" ? d.getFullYear()+"/"+(d.getMonth()+1) : (d.getMonth()+1)+"/"+d.getDate(); };
+  for(let i=0;i<5;i++){
+    c.textAlign = i===0?"left" : i===4?"right" : "center";
+    c.fillText(fmtX(t0+span*i/4), gx+gw*i/4, gy+gh+4);
   }
 
-  // なぞった位置の点を示す（投資アプリのクロスヘア）
+  // 凡例（2系列のとき）
+  if(ss.length>1){
+    c.font="10px "+CFONT; c.textBaseline="top"; c.textAlign="left";
+    let lx=gx;
+    ss.forEach(s=>{
+      c.fillStyle=s.color; c.beginPath(); c.arc(lx+4, gy-10, 4, 0, 7); c.fill();
+      const txt=s.label+(s.unit?" "+s.unit:"");
+      c.fillStyle=col.sub; c.fillText(txt, lx+12, gy-15);
+      lx += 12 + c.measureText(txt).width + 14;
+    });
+  }
+
+  // なぞった位置（1つ目の系列の点に合わせ、他の系列も同じ日付で拾う）
   let picked=null;
   if(hoverX!=null){
-    let bi=0, bd=Infinity;
-    series.forEach((p,i)=>{ const d=Math.abs(X(i)-hoverX); if(d<bd){ bd=d; bi=i; } });
-    picked=series[bi];
-    const px=X(bi), py=Y(picked.v);
-    c.strokeStyle=col.sub; c.lineWidth=1; c.setLineDash([3,3]);
-    c.beginPath(); c.moveTo(px,gy); c.lineTo(px,gy+gh); c.stroke(); c.setLineDash([]);
-    c.fillStyle=col.card; c.beginPath(); c.arc(px,py,6,0,7); c.fill();
-    c.strokeStyle=col.blue; c.lineWidth=2.5; c.beginPath(); c.arc(px,py,5,0,7); c.stroke();
+    let bd=Infinity, bdate=null;
+    ss[0].pts.forEach(p=>{ const d=Math.abs(X(p.date)-hoverX); if(d<bd){ bd=d; bdate=p.date; } });
+    if(bdate!=null){
+      const px=X(bdate);
+      c.strokeStyle=col.sub; c.lineWidth=1; c.setLineDash([3,3]);
+      c.beginPath(); c.moveTo(px,gy); c.lineTo(px,gy+gh); c.stroke(); c.setLineDash([]);
+      picked={date:bdate, vals:[]};
+      ss.forEach(s=>{
+        const p=s.pts.reduce((a,b)=> Math.abs(T(b.date)-T(bdate))<Math.abs(T(a.date)-T(bdate))?b:a, s.pts[0]);
+        picked.vals.push({v:p.v, unit:s.unit, color:s.color});
+        c.fillStyle=col.card; c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 6, 0, 7); c.fill();
+        c.strokeStyle=s.color; c.lineWidth=2.5; c.beginPath(); c.arc(X(p.date), s.ax.Y(p.v), 5, 0, 7); c.stroke();
+      });
+    }
   }
-  renderPeriod(series, picked);
+  renderPeriod(ss, picked);
 }
 function dailySeries(m, rows){
   return (rows||data).filter(e=>val(e,m)!=null).map(e=>({date:e.date, v:val(e,m)})).sort((a,b)=>a.date<b.date?-1:1);
 }
 // グラフの上の行。ふだんは「期間と増減」、なぞっている間はその日の値。
 // X軸だけでは年が分からないので、ここで期間を明示する。
-function renderPeriod(series, picked){
+function renderPeriod(ss, picked){
   const el=document.getElementById("period");
-  if(!series || !series.length){ el.textContent=""; return; }
+  if(!ss || !ss.length){ el.textContent=""; return; }
   const jp=d=>`${d.slice(0,4)}/${+d.slice(5,7)}/${+d.slice(8,10)}`;
-  const u=M_UNIT[metric];
 
   if(picked){
-    el.innerHTML=`<b>${jp(picked.date)}</b>　<b style="font-size:16px">${r2(picked.v)}</b>${u}`;
+    el.innerHTML=`<b>${jp(picked.date)}</b>　`
+      + picked.vals.map(v=>`<b style="font-size:16px;color:${v.color}">${r2(v.v)}</b>${v.unit}`).join("　");
     return;
   }
-  const a=series[0].v, b=series[series.length-1].v, d=b-a;
-  const col = Math.abs(d)<0.005 ? "var(--sub)" : (d>0 ? "var(--gold)" : "var(--blue)");
-  el.innerHTML=`${jp(series[0].date)} 〜 ${jp(series[series.length-1].date)}`
-    + `　<b style="color:${col}">${d>0?"+":""}${r2(d)}${u}</b>`;
+  const p0=ss[0].pts, from=p0[0].date, to=p0[p0.length-1].date;
+  const diff=ss.map(s=>{
+    const d=s.pts[s.pts.length-1].v - s.pts[0].v;
+    return `<b style="color:${s.color}">${d>0?"+":""}${r2(d)}${s.unit}</b>`;
+  }).join("　");
+  el.innerHTML=`${jp(from)} 〜 ${jp(to)}　${diff}`;
 }
 
 // ---- 入力・操作 ----
@@ -450,8 +499,13 @@ document.getElementById("list").onclick=e=>{
   data=data.filter(x=>x.date!==b.dataset.d); render();
 };
 // メトリック / 粒度 切替
-document.getElementById("metric").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
-  metric=b.dataset.m; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
+document.getElementById("metric").onclick=e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  const m=b.dataset.m, i=metrics.indexOf(m);
+  if(i>=0){ if(metrics.length>1) metrics.splice(i,1); }      // 最後の1つは外せない
+  else { metrics.push(m); if(metrics.length>2) metrics.shift(); }  // 3つ目は古いほうと入れ替え
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle("on", metrics.includes(x.dataset.m)));
+  drawChart(); };
 document.getElementById("gran").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
   gran=b.dataset.g; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
 document.getElementById("range").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
