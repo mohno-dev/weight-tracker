@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="体重ログ">
+<title>体重ログ</title>
+<!-- ホーム画面用アイコン。src/make_icon.py --inject で埋め込む（画像は外部ファイルにしない） -->
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAOBUlEQVR42u2de5RVVRnA9+O872vuzMAwA8hLyZFGGFGUh0mYULhMrTR1lS6LHhpprZZZyzRtVfb4Q9Ms85GKy6xWlkiBT0AlSRgQIV4pgiAQw7zu+95z9t5ffxyZRcC87gwz99z5fmv+mnWGxdnnd769v2/vszetO2MxQZATwbAJEJQDQTkQlANBORCUA0E5EJQDQTkQlANBORAE5UBQDgTlQFAOBOVAUA4E5UBQDgTlQFAOBEE5EJQDQTkQlANBORCUA0E5EJQDQTkQlANBUA4E5UBQDgTlQFAOBOVAUA4E5UBQDgTlQFAOBEE5EJQDQTkQlANBORCUA0E5EJQDQTkQlANBUA4E5UBQDgTlQFAOBOVAUA4E5UDKDm3A/0VKCSGUEAIA2L4ox4dwxgglQkgpFSFE1xlnTAEohZYMYzkopZSSRConpKysCFXELEJoa3u6PZ2xTCMUMn1dkGEnB2es4IlCwVswr+GyhdPPbpw4sjpKCNmz9/Ab697587NvNm16ryIWwo4mcNC6Mxb3ywzOstlCvCL0y7uuvuzis4+/wBPy3gef/9k9y0xTY4yhHwGCR0bMKD7VYdR1RUXM+cvjN8+dUy+lOvrZAxCpQONs9rmTx9RVLntho65r2OLDRQ5CqOuKPz66eMZZkzxPaBpnjB4NY5QQ6nmi8cxxuq4tf+ntcMhUGDzKvs6habwjkbnu6vPnnPcRz5NdRQVKia5zKdVNX51/TuPEdLbAGBZXyl0OKaVl6tddNQcAGKPd5zIAoGn8ms/NyuXc7i9GAi8HY7RQ8CZNqJk8qZYQ2uPz9i+Yec6p0bAthMR2L2c5KKWuJ8efMsK2DQCglPZ4PSFk3Njq6uqIELLH65HA1zn6+oyVUkKosuxWKPUrgZQAUQDlkbEXGTkAiMZZ8+GE54leGgIAuq45jpHPe5yXz5iUMco5kxLSmXwimU2ksp4nGGNlcI9FprIAoHHW0pb+3KUz4rFQjz0LpRSAmIY2Y/qkv7+wKZXOmYZeBq8X5yyXc9OZQixqN545vn5y3fhTRubybktbKl8Qfp87HLsVTddaWpNLl2/89g2fFFL1mJ8yRpVSjQ3j/rrk5suvvTeRzDp2sOdcNM5a29MNZ4z9xqKL5s6qHzO60v99e0dm3cb3Hl6y8oWVW2JRmxAaUEWKL59TSqWUtm2+uuy2saOrhJCaxnv8K/+yzVv3Bt0PzllLa+or1378x7ddEQlbhBAgBBR0pmaEkIeeWHnrXX+yLYOxQPrRrwqppvFEMtu0afenP3WWY5uekJTQ7oepjDEhZO2o+Mfn1D+7fEM6kw9i/8I5a+/I3PClC+/5yRdMQ/Pzr04AQCkAgHMaJ44dXbVsRVDnDfolBwDYtvnOrv+uXf/u7PMmV1dGKKWUEKUAgCgAdiJPgu4HYyydyc08+7QnfvM1Py/hnB39RvjzBoxRz5PTGsal0vnV/9wedoI3b9DPuRWiFIRC1u73m595bl3BFdWVkXhFyG8sRikAOWEYCbQflBJPyIfuXTR2dJVS0E1WwhgFIGc3TnhmWVMyleOck2E1Zd8ZZl1PpNP5aMSZPGlUzchYNlc4Z9rEO757uVJAu+hqgjj+YIxmc+6U08esfPb7xwQMcuJJBsU5+/ZtTz30xMrqqkiwqsP9jRyd/QtnzHFMADhwsP0/uw7u29/6yqtbk6n8gnkNXfkRxPihaTyTyV88v3HhRVOVgh4LekopSlkmW1i6YoNlBWx0NWCFGgDw33vHMWJRJxK262rjv37kxVvueJpz5g/QTtjWQsgzp5zytyXfikWdbK5QyrUjjTPPk6l0vrFhXC8XtvlV0zF1lYbOAzfuHvgnoRRIqaRUnidHjoiVhx+UUk3j7YmsofNH7/vKVZ85TynoTeruk8u5risCN28wMN1KN6JEIvaqNdsSidyCC88MaP+icSaEau/ILLxo6pMP3jDv/Cm9GW0cw7PLNySTOdMMUs9ycuUIuh+dASMatu++/cq77/h8vCIkZR/mDv15g8p46GOzTl+6ImB52UmXI7h+/H/A+PqFH5vi12/62utRSqVUtaMqApe3D4YcgfOjq4BRRG/SmQAHsa4zSHIEyI++BgwAkBIAoPNWaLnUhQdPjtL3o4iAoZRijPnF8qPnVsrDj0GVo5T9KCZgKOCcpTP5h59cfag5EQlbSkEu59q2AUAIgaDX/QamfF5EnbH5cGLxovm//NHV/uB/COvrlFJ/lrUqHv7Bdy798hfnkiNl767+RCrFGSOErF6z/Xs/+uNbW963TL26KmJbRjqdv/Ly835x51VDfl/BixylFj+KCxgaZ6l0/s6fP/PdO59u68hUVYZNQy8URCZTUACvrtmeSAa4rjPEcpSCH0WMMOSREcbqNduvu/HB51ZsjEUd/5Mt/+MdzhmjtAzqfkMsx9D6MSABw5fp+P9IedSFh1iOIWnHgQ0Y5T1vMMRyDHI7ntSAUX5+DL0cg9OOgxMwysyPkpDjZLfjYAaMcvKjVOQ4Se04JAGjbPwoITkGvB2HMGCUhx+lJUd/2tGxTep/UEQJIUMfMMrAj5KTo4h2nDunfuk/NnxwsK1QENmc64eHRDI75AEj6H6Uohx9a0ep6moqPnHBR0eNjC2Y13DW1PEARCl11/c+WwoBI9jrWoZk4m1g5+eO/0Sgc2q0my2pjg4YP71n6e8eX0kpDYesQfi0pKTmHYMXOfr0nlFK/SXvSn1og//qd9Xogx8wAho/SlqOPvnRuejGjwpd7Vk4aCOMMvCj1OXofTv2Zj+qoQ0YgfMjAHIc347+kR19WupbIgEjWH4EQ47/a8dk7oLZ9d2MJ7oasZZIwOh/3v7XZeuTqfwgfB8VGDmOtKO16rVt8+c1nDKmqpcfF/lD1HQm/8OSCRhF++F5sm5U/LKF059/+e1EKnuy93QI2I4zSoHjGL0/3UcpRSndvHXvopsf2brjg8p42E8RS+2+hPjwu2JCyJH89lg/lFK6zgkhGzfvsSxjEOQO3nZEftba+4s1jT33/FtNm3ZPGDcyn3dL9r6690MpYIw1tyS/eeuSpSs2REKWZemUKEKJb4l/oQI6gNJoQdv0kxVcsXHznvNnnd6bHtdPaLft+CAWtT1PlPjddeWH/3XM21v3XrPogX0HWmtGxAhIT0A6rwNQnStCiZBUKRqyhKkrqehwlAMADENbtWb7t77+yR4HpEoBoaSlLdW0abdp6IE4au54PwgBztneD1o+e+2v2jrSlRVhpUQyq0dsccmMAzPrW06tSzFKDrbbb+6oWr1l5L7DTizk+RsJDy85pFSRsPX6GzteX7vz/Jkf6X5/SymVrvPHnnpt/8H26qqwEMHY0/IYPzwhpStuvOWJwy3JeEVISpHM6vOmHbr96q0fHZegFPw4wRhcM3fPgTb7vqWTH39pomVISvvrR5CylSMFLialbNq0+8rLznVsUwh5wmKo50ld529t3rP41iWWpfulkUDlZfaqNdva2tILL5r2wKMvP/jYKyNGRJUSHRnj2k/sefjm9ZURN5XT8y53Pe56PO/yXIGHLHnpzP3xsPd8U62uwTBKZTt7FtPUDxxsW7v+3UsWnOU4plIg/c3oAQDA3+KSc7Zpy/tXXH9/vuDpAdxySSmIhK3X/7Wz+XDyHy9uyuVdXaMdGf3yWfsfuHFDKqu5gnMGjPp78hNGCWNEKZrMGRc0HDYNuaKp1jElAB1GchzZ/9TYtfvQCyu3TBw3YuL4kX6Nq/PH9cRjf3jtxlseT2XytmUE9GBbBeA41rqNu3I51zB4waM1FYWHb1pv6EpIxhmccBtMxiCT12bVt258t3Ln/qhtFO9HUE/kk1LFos477/33iuvvn3XuaXNn10+fNkHTeDKZXbv+nVVrtr/9772hkGmZeqC3V1dKRcO2AmBUZfL6Vz+1a3xNpjlh6LxL3SkhUhHG4Pr5763eMqI/ETPAxzVKqRzbACCvr9258rWtuq5RQhSAEMqy9HhFSKlyOAxbKkUIUYqYupo9paXg0R7LwpxBzuVTJ3aMrsq1JE1dK7JTDfZZnv6zj4RtRolfD/frzgqgnM7AppS4glXHCqfWplzBGYVe7LHMqmOFSbXp/a2OqXuyqJ6lHA56VUodJULZnkuqMaVz1ZeTwkHXVGntQ4qcnOABeY9nChql0Ntg47FMXmMUUI5yBoAYGrQkzG17Y6auVE99BAAxNHmgzf7P/oipS1VstoJyBCV0EAXk5bdqOIMeH7ZQzDHlG9uqDyesokejKEdwxlWSRh3x3L9Gr9tZFQ+7nqRdj8Copcu2lPG75ZMsvV9FMJQjID0LIZxB3uO3/n5qa9KM2MITJ6iCCUk5B8eUtz/ZsGNf1DZlf3L5QFZIh+vIg9qGer859OaOqgunHaqtzLuCScWUogooEMooiTqCUHLLI9OefGVCPOL1c+4e5QhWQZ3aptzbHFr25uiwJcbXZONhN2xLxxSmAa5gb2yvvum301c01cbDXv9XdZT0F29IVwWMgsdzLp9Qk26c1H7a6BSjcKDN2fBufOe+KBAStsSArPfRsK1J8ArqVNeUqcuDbfbuQyGpKCGUUTB15ZiCUDJMV4IhnZUMCdTQlb+ox/8NAFFACQzjBcbIMYqQAB3jhZQNKAeCciAoB4JyICgHgnIgKAeCciAoB4JyICgHgqAcCMqBoBwIyoGgHAjKgaAcCMqBoBwIyoEgKAeCciAoB4JyICgHgnIgKAeCciAoB4JyIAjKgaAcCMqBoBwIyoGgHAjKgaAcCMqBoBwIyoEgKAeCciAoB3JS+R+4av+/b07JWAAAAABJRU5ErkJggg==">
+<style>
+  :root{
+    --navy:#1a2a6c; --blue:#4a90d9; --gold:#ECC023; --red:#C00000;
+    --ink:#1c2430; --sub:#5b6470; --line:#e3e7ee; --bg:#f5f7fb; --card:#fff;
+    --pad:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#e8ecf3; --sub:#9aa4b2; --line:#2a3446; --bg:#0f141c; --card:#171e29; }
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    font-family:"Yu Gothic Medium","Yu Gothic","游ゴシック",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink);
+    padding:max(12px,env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));
+    max-width:640px; margin:0 auto; font-size:15px; line-height:1.5;
+  }
+  h1{font-size:18px; margin:4px 2px 12px; display:flex; align-items:center; gap:8px}
+  h1 .mode{font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; color:#fff}
+  .mode.cut{background:var(--blue)} .mode.bulk{background:var(--gold); color:var(--navy)} .mode.flat{background:var(--sub)}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:var(--pad); margin-bottom:12px}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end}
+  label{font-size:12px; color:var(--sub); display:block; margin-bottom:3px}
+  input[type=date],input[type=number],input[type=text]{
+    font:inherit; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+    background:var(--bg); color:var(--ink); width:100%;
+  }
+  input[type=number]{font-variant-numeric:tabular-nums}
+  /* ラベルを左に置いて1行にまとめる（日付／体重・体脂肪率 の2行） */
+  .inline{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
+  /* ラベルも入力欄も本文と同じ文字サイズに揃える */
+  .inline label{margin:0; flex:0 0 auto; white-space:nowrap; font-size:inherit}
+  .inline input[type=number]{flex:1 1 76px; min-width:0}
+  .inline input[type=date]{flex:0 0 auto; width:auto}
+  button{font:inherit; font-weight:700; border:0; border-radius:9px; padding:10px 14px; cursor:pointer}
+  .primary{background:var(--navy); color:#fff}
+  .ghost{background:transparent; color:var(--blue); border:1px solid var(--line); font-weight:600; padding:7px 11px}
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+  .stat{background:var(--bg); border-radius:10px; padding:10px 8px; text-align:center}
+  .stat .v{font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.3px}
+  .stat .u{font-size:11px; color:var(--sub); font-weight:400}
+  .stat .k{font-size:11px; color:var(--sub); margin-top:2px}
+  .stat.hl{background:linear-gradient(180deg,rgba(74,144,217,.14),rgba(74,144,217,.05))}
+  .stat .v.warn{color:var(--red)}
+  .seg{display:inline-flex; background:var(--bg); border-radius:9px; padding:3px; gap:2px; flex-wrap:wrap}
+  .seg button{background:transparent; color:var(--sub); font-weight:600; padding:6px 11px; border-radius:7px; font-size:13px}
+  .seg button.on{background:var(--card); color:var(--navy); box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  @media (prefers-color-scheme: dark){ .seg button.on{color:var(--blue)} }
+  .chartwrap{position:relative; width:100%; height:230px; margin-top:10px}
+  canvas{width:100%; height:100%; display:block}
+  .pace{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
+  .pill{font-size:12px; padding:5px 10px; border-radius:999px; background:var(--bg); color:var(--sub)}
+  .pill b{color:var(--ink); font-variant-numeric:tabular-nums}
+  /* 記録一覧は列が多い。狭い画面ではページ全体を広げず、表の中だけ横スクロールさせる */
+  #list{overflow-x:auto; -webkit-overflow-scrolling:touch}
+  table{width:100%; min-width:302px; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:13px}
+  th,td{text-align:right; padding:6px 5px; border-bottom:1px dotted var(--line); white-space:nowrap}
+  th{color:var(--sub); font-weight:600; font-size:12px; text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  td .del{color:var(--sub); background:transparent; padding:2px 8px; font-weight:400; font-size:16px; line-height:1}
+  .muted{color:var(--sub); font-size:13px}
+  details summary{cursor:pointer; color:var(--blue); font-size:13px; font-weight:600; list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  .setgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .empty{text-align:center; color:var(--sub); padding:20px 0; font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>体重ログ <span id="mode" class="mode flat">—</span></h1>
+
+<!-- 入力 -->
+<div class="card">
+  <div class="inline">
+    <label for="i-date">日付</label>
+    <input type="date" id="i-date">
+  </div>
+  <div class="inline">
+    <label for="i-w">体重</label>
+    <input type="number" id="i-w" inputmode="decimal" step="0.05" placeholder="59.20">
+    <label for="i-f">体脂肪率</label>
+    <input type="number" id="i-f" inputmode="decimal" step="0.1" placeholder="10.0">
+    <button class="primary" id="add">記録</button>
+  </div>
+  <div class="toolbar">
+    <button class="ghost" id="sync">体組成計から取り込む</button>
+  </div>
+  <div class="muted" id="hint" style="margin-top:8px"></div>
+</div>
+
+<!-- サマリ -->
+<div class="card">
+  <div class="stats" id="stats"></div>
+  <div class="pace" id="pace"></div>
+</div>
+
+<!-- グラフ -->
+<div class="card">
+  <div class="row" style="justify-content:space-between; align-items:center">
+    <div class="seg" id="metric">
+      <button data-m="w" class="on">体重</button>
+      <button data-m="f">体脂肪</button>
+      <button data-m="lbm">除脂肪</button>
+      <button data-m="ffmi">FFMI</button>
+    </div>
+    <div class="seg" id="gran">
+      <button data-g="d">日次</button>
+      <button data-g="w" class="on">週平均</button>
+      <button data-g="m">月平均</button>
+    </div>
+  </div>
+  <div class="chartwrap"><canvas id="chart"></canvas></div>
+</div>
+
+<!-- 一覧 -->
+<div class="card">
+  <details open>
+    <summary>記録一覧 <span class="muted" id="count"></span></summary>
+    <div id="list" style="margin-top:10px"></div>
+  </details>
+</div>
+
+<!-- 設定 & バックアップ -->
+<div class="card">
+  <details>
+    <summary>設定・バックアップ</summary>
+    <div class="setgrid">
+      <div><label>身長 cm</label><input type="number" id="s-h" step="0.1"></div>
+      <div><label>上限体重 kg</label><input type="number" id="s-wmax" step="0.5"></div>
+      <div><label>上限体脂肪 %</label><input type="number" id="s-fmax" step="0.5"></div>
+      <div><label>目標FFMI</label><input type="number" id="s-ffmi" step="0.1"></div>
+      <div style="grid-column:1/-1"><label>ショートカット名（取り込み用）</label><input type="text" id="s-sc" placeholder="体重取得"></div>
+    </div>
+    <div class="toolbar">
+      <button class="ghost" id="save-set">設定を保存</button>
+      <button class="ghost" id="export">CSV書き出し</button>
+      <label class="ghost" style="display:inline-flex;align-items:center;cursor:pointer">
+        CSV読み込み<input type="file" id="import" accept=".csv" hidden>
+      </label>
+    </div>
+    <div class="muted" style="margin-top:10px">
+      データはこの端末（ブラウザ）にのみ保存されます。機種変・バックアップはCSV書き出しで。
+    </div>
+  </details>
+</div>
+
+<script>
+"use strict";
+const KEY="wt_data", SKEY="wt_settings";
+// 既定値は一般的な値。自分の身長・目標は「設定」で入れる（この端末に保存される）。
+const DEF_SET={ h:170, wmax:75, fmax:20, ffmi:20, sc:"体重取得" };
+
+let data = load(KEY, []);          // [{date:"YYYY-MM-DD", w:Number, f:Number|null}]
+let set  = Object.assign({}, DEF_SET, load(SKEY, {}));
+let metric="w", gran="w";
+
+function load(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }
+function store(){ localStorage.setItem(KEY, JSON.stringify(data)); localStorage.setItem(SKEY, JSON.stringify(set)); }
+const r2=x=>Math.round(x*100)/100, r1=x=>Math.round(x*10)/10;
+const hm = ()=> set.h/100;
+
+// ---- 派生量 ----
+function lbm(e){ return e.f==null? null : e.w*(1-e.f/100); }              // 除脂肪 kg
+function ffmi(e){ const l=lbm(e); return l==null? null : l/(hm()*hm()); } // 素のFFMI
+function val(e,m){ return m==="w"?e.w : m==="f"?e.f : m==="lbm"?lbm(e) : ffmi(e); }
+const M_LABEL={w:"体重",f:"体脂肪",lbm:"除脂肪",ffmi:"FFMI"};
+const M_UNIT ={w:"kg",f:"%",lbm:"kg",ffmi:""};
+// canvas は body の font-family を継承しないので、同じ指定を明示的に持つ
+const CFONT='"Yu Gothic Medium","Yu Gothic","游ゴシック",system-ui,sans-serif';
+
+// ---- 集計 ----
+function isoWeekKey(d){ // 月曜起点。"YYYY-Www" と週の月曜日付を返す
+  const t=new Date(d+"T00:00:00"); const day=(t.getDay()+6)%7; t.setDate(t.getDate()-day);
+  const y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,"0"), dd=String(t.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`; // その週の月曜日（ソート・表示に使える）
+}
+function monthKey(d){ return d.slice(0,7)+"-01"; }
+function groupAvg(g, m){
+  const keyf = g==="w"?isoWeekKey : g==="m"?monthKey : (d=>d);
+  const bins={};
+  for(const e of data){
+    const v=val(e,m); if(v==null) continue;
+    const k=keyf(e.date); (bins[k]??=[]).push(v);
+  }
+  return Object.keys(bins).sort().map(k=>({date:k, v:bins[k].reduce((a,b)=>a+b,0)/bins[k].length, n:bins[k].length}));
+}
+// 直近N件の平均（生データ・降順の先頭から）
+function recentAvg(m, days){
+  const cutoff=addDays(todayStr(), -days);
+  const vs=data.filter(e=>e.date>=cutoff).map(e=>val(e,m)).filter(v=>v!=null);
+  return vs.length? vs.reduce((a,b)=>a+b,0)/vs.length : null;
+}
+function todayStr(){ const t=new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
+function addDays(s,n){ const t=new Date(s+"T00:00:00"); t.setDate(t.getDate()+n); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; }
+
+// 週平均系列から線形回帰の傾き（単位/週）
+function slopePerWeek(m){
+  const s=groupAvg("w",m); if(s.length<2) return null;
+  const pts=s.slice(-6); // 直近6週
+  const n=pts.length; let sx=0,sy=0,sxx=0,sxy=0;
+  pts.forEach((p,i)=>{ sx+=i; sy+=p.v; sxx+=i*i; sxy+=i*p.v; });
+  const d=n*sxx-sx*sx; if(!d) return null;
+  return (n*sxy-sx*sy)/d; // 1週あたりの変化
+}
+
+// ---- 描画 ----
+function render(){
+  data.sort((a,b)=>a.date<b.date?1:-1); // 一覧は新しい順
+  renderMode(); renderStats(); renderPace(); renderList(); drawChart();
+  store();
+}
+
+function renderMode(){
+  const sl=slopePerWeek("w"); const el=document.getElementById("mode");
+  if(sl==null){ el.className="mode flat"; el.textContent="—"; return; }
+  if(sl<-0.05){ el.className="mode cut"; el.textContent=`減量 ${r2(sl)}kg/週`; }
+  else if(sl>0.05){ el.className="mode bulk"; el.textContent=`増量 +${r2(sl)}kg/週`; }
+  else { el.className="mode flat"; el.textContent="維持"; }
+}
+
+function renderStats(){
+  const latest=data[0]; // 新しい順の先頭
+  const wWeek=recentAvg("w",7), wMonth=recentAvg("w",30);
+  const l = latest?lbm(latest):null, fi = latest?ffmi(latest):null;
+  const wRoom = wWeek!=null? set.wmax-wWeek : null;   // 上限体重までの余裕（週平均基準）
+  const cells=[
+    ["最新", latest?r2(latest.w):"—", "kg", latest?latest.date.slice(5):"—", false],
+    ["週平均", wWeek!=null?r2(wWeek):"—", "kg", "直近7日", true],
+    ["月平均", wMonth!=null?r2(wMonth):"—", "kg", "直近30日", true],
+    ["除脂肪", l!=null?r2(l):"—", "kg", latest&&latest.f!=null?"":"要 体脂肪", false],
+    ["FFMI", fi!=null?r1(fi):"—", "", `目標 ${set.ffmi}`, false],
+    ["上限まで", wRoom!=null?(wRoom>=0?r2(wRoom):r2(wRoom)):"—", "kg", `${set.wmax}kg`, false, wRoom!=null&&wRoom<0],
+  ];
+  document.getElementById("stats").innerHTML = cells.map(c=>`
+    <div class="stat${c[4]?' hl':''}">
+      <div class="v${c[5]?' warn':''}">${c[1]}<span class="u">${c[2]}</span></div>
+      <div class="k">${c[0]} · ${c[3]}</div>
+    </div>`).join("");
+}
+
+function renderPace(){
+  const el=document.getElementById("pace"); const p=[];
+  const sw=slopePerWeek("w");
+  if(sw!=null){
+    p.push(`直近ペース <b>${sw>=0?'+':''}${r2(sw)}</b> kg/週`);
+    p.push(`＝月 <b>${sw>=0?'+':''}${r2(sw*4.345)}</b> kg`);
+  }
+  // 月平均の前月差
+  const ms=groupAvg("m","w");
+  if(ms.length>=2){ const d=ms[ms.length-1].v-ms[ms.length-2].v;
+    p.push(`前月比 <b>${d>=0?'+':''}${r2(d)}</b> kg`); }
+  const fWeek=recentAvg("f",14);
+  if(fWeek!=null) p.push(`体脂肪 週 <b>${r1(fWeek)}</b>%`);
+  // 計画の目安（年1.33kg=月0.11kg）
+  if(sw!=null){ const perMonth=sw*4.345;
+    const tag = Math.abs(perMonth)<=0.2? "計画ペース内" : (perMonth>0.2? "増加が速い" : "減少が速い");
+    p.push(`<b>${tag}</b>（目安 ±0.11kg/月）`); }
+  el.innerHTML = p.map(t=>`<span class="pill">${t}</span>`).join("");
+}
+
+function renderList(){
+  const el=document.getElementById("list");
+  document.getElementById("count").textContent = data.length? `（${data.length}件）` : "";
+  if(!data.length){ el.innerHTML=`<div class="empty">まだ記録がありません。毎朝トイレ後・同じ条件で1つ入れていきましょう。</div>`; return; }
+  const rows=data.slice(0,60).map(e=>{
+    const l=lbm(e), fi=ffmi(e);
+    return `<tr>
+      <td>${e.date}</td>
+      <td>${r2(e.w)}</td>
+      <td>${e.f!=null?r1(e.f):"–"}</td>
+      <td>${l!=null?r2(l):"–"}</td>
+      <td>${fi!=null?r1(fi):"–"}</td>
+      <td><button class="del" data-d="${e.date}">×</button></td>
+    </tr>`;}).join("");
+  el.innerHTML=`<table>
+    <tr><th>日付</th><th>体重</th><th>体脂肪</th><th>除脂肪</th><th>FFMI</th><th></th></tr>
+    ${rows}</table>` + (data.length>60?`<div class="muted" style="margin-top:6px">直近60件を表示</div>`:"");
+}
+
+// ---- canvas 折れ線 ----
+function drawChart(){
+  const cv=document.getElementById("chart"); const wrap=cv.parentElement;
+  const dpr=window.devicePixelRatio||1;
+  const W=wrap.clientWidth, H=wrap.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const c=cv.getContext("2d"); c.scale(dpr,dpr); c.clearRect(0,0,W,H);
+  const css=getComputedStyle(document.body);
+  const col={ ink:css.getPropertyValue('--ink').trim(), sub:css.getPropertyValue('--sub').trim(),
+              line:css.getPropertyValue('--line').trim(), blue:css.getPropertyValue('--blue').trim(),
+              navy:css.getPropertyValue('--navy').trim(), red:css.getPropertyValue('--red').trim(),
+              gold:css.getPropertyValue('--gold').trim() };
+
+  // 系列（選択粒度）＋日次点（薄く）
+  const series = gran==="d"? dailySeries(metric) : groupAvg(gran, metric);
+  const daily  = dailySeries(metric);
+  if(series.length===0){ c.fillStyle=col.sub; c.font="13px "+CFONT; c.textAlign="center";
+    c.fillText("データを入れるとグラフが出ます", W/2, H/2); return; }
+
+  const pad={l:38,r:10,t:12,b:22};
+  const gx=pad.l, gw=W-pad.l-pad.r, gy=pad.t, gh=H-pad.t-pad.b;
+
+  // Y範囲（上限ラインも含める）
+  let vals=series.map(p=>p.v).concat(daily.map(p=>p.v));
+  let limit=null;
+  if(metric==="w") limit=set.wmax; else if(metric==="f") limit=set.fmax; else if(metric==="ffmi") limit=set.ffmi;
+  if(limit!=null) vals.push(limit);
+  let mn=Math.min(...vals), mx=Math.max(...vals);
+  if(mn===mx){ mn-=1; mx+=1; } const padv=(mx-mn)*0.12; mn-=padv; mx+=padv;
+  const X=i=> series.length===1? gx+gw/2 : gx + gw*i/(series.length-1);
+  const Y=v=> gy + gh*(1-(v-mn)/(mx-mn));
+
+  // グリッド＋Yラベル
+  c.font="10px "+CFONT; c.textAlign="right"; c.textBaseline="middle";
+  for(let i=0;i<=4;i++){ const v=mn+(mx-mn)*i/4, y=Y(v);
+    c.strokeStyle=col.line; c.lineWidth=1; c.beginPath(); c.moveTo(gx,y); c.lineTo(gx+gw,y); c.stroke();
+    c.fillStyle=col.sub; c.fillText((metric==="ffmi"?r1(v):r1(v)), gx-6, y); }
+
+  // 上限ライン（赤破線）
+  if(limit!=null && limit>=mn && limit<=mx){
+    const y=Y(limit); c.strokeStyle=col.red; c.lineWidth=1.5; c.setLineDash([5,4]);
+    c.beginPath(); c.moveTo(gx,y); c.lineTo(gx+gw,y); c.stroke(); c.setLineDash([]);
+    c.fillStyle=col.red; c.textAlign="left"; c.fillText("上限 "+r1(limit), gx+2, y-7);
+  }
+
+  // 日次点（粒度が日次でない時、背景に薄く）
+  if(gran!=="d"){
+    const dmap={}; series.forEach((p,i)=>dmap[p.date]=i);
+    // 日次を series の x スケールに載せるため、日付→最近傍indexで近似配置
+    const first=series[0].date, last=series[series.length-1].date;
+    const span=(new Date(last)-new Date(first))||1;
+    c.fillStyle=col.blue+"33";
+    daily.forEach(p=>{ const t=(new Date(p.date)-new Date(first))/span;
+      const x=gx+gw*Math.max(0,Math.min(1,t)); c.beginPath(); c.arc(x,Y(p.v),2,0,7); c.fill(); });
+  }
+
+  // 主系列（線＋点）
+  c.strokeStyle=col.navy; c.lineWidth=2.4; c.lineJoin="round"; c.beginPath();
+  series.forEach((p,i)=>{ const x=X(i),y=Y(p.v); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+  c.fillStyle=col.navy;
+  series.forEach((p,i)=>{ c.beginPath(); c.arc(X(i),Y(p.v),3,0,7); c.fill(); });
+
+  // 最新値ラベル
+  const last=series[series.length-1];
+  c.fillStyle=col.navy; c.font="bold 12px "+CFONT; c.textAlign="right"; c.textBaseline="bottom";
+  c.fillText(r2(last.v)+M_UNIT[metric], gx+gw, Y(last.v)-6);
+
+  // Xラベル（端＋中央）
+  c.fillStyle=col.sub; c.font="10px "+CFONT; c.textAlign="center"; c.textBaseline="top";
+  const fmtX=d=> gran==="m"? d.slice(0,7) : d.slice(5);
+  c.fillText(fmtX(series[0].date), X(0), gy+gh+4);
+  if(series.length>2) c.fillText(fmtX(series[Math.floor((series.length-1)/2)].date), X(Math.floor((series.length-1)/2)), gy+gh+4);
+  c.textAlign="right"; c.fillText(fmtX(last.date), gx+gw, gy+gh+4);
+}
+function dailySeries(m){
+  return data.filter(e=>val(e,m)!=null).map(e=>({date:e.date, v:val(e,m)})).sort((a,b)=>a.date<b.date?-1:1);
+}
+
+// ---- 入力・操作 ----
+document.getElementById("i-date").value=todayStr();
+function upsert(date,w,f){
+  const i=data.findIndex(e=>e.date===date);
+  const rec={date, w, f:(f===""||f==null||isNaN(f))?null:+f};
+  if(i>=0) data[i]=rec; else data.push(rec);
+}
+document.getElementById("add").onclick=()=>{
+  const d=document.getElementById("i-date").value;
+  const w=parseFloat(document.getElementById("i-w").value);
+  const fRaw=document.getElementById("i-f").value;
+  const hint=document.getElementById("hint");
+  if(!d || isNaN(w)){ hint.textContent="日付と体重は必須です。"; return; }
+  const existed=data.some(e=>e.date===d);
+  upsert(d, r2(w), fRaw);
+  document.getElementById("i-w").value=""; document.getElementById("i-f").value="";
+  hint.textContent = existed? `${d} を更新しました。` : `${d} を記録しました。`;
+  render();
+};
+document.getElementById("list").onclick=e=>{
+  const b=e.target.closest(".del"); if(!b) return;
+  data=data.filter(x=>x.date!==b.dataset.d); render();
+};
+// メトリック / 粒度 切替
+document.getElementById("metric").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
+  metric=b.dataset.m; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
+document.getElementById("gran").onclick=e=>{ const b=e.target.closest("button"); if(!b)return;
+  gran=b.dataset.g; [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b)); drawChart(); };
+
+// 設定
+function fillSettings(){ document.getElementById("s-h").value=set.h; document.getElementById("s-wmax").value=set.wmax;
+  document.getElementById("s-fmax").value=set.fmax; document.getElementById("s-ffmi").value=set.ffmi;
+  document.getElementById("s-sc").value=set.sc??DEF_SET.sc; }
+document.getElementById("save-set").onclick=()=>{
+  set.h=+document.getElementById("s-h").value||DEF_SET.h;
+  set.wmax=+document.getElementById("s-wmax").value||DEF_SET.wmax;
+  set.fmax=+document.getElementById("s-fmax").value||DEF_SET.fmax;
+  set.ffmi=+document.getElementById("s-ffmi").value||DEF_SET.ffmi;
+  set.sc=document.getElementById("s-sc").value.trim()||DEF_SET.sc;
+  document.getElementById("hint").textContent="設定を保存しました。";
+  render();
+};
+
+// ---- Health Planet 取込（テスト対象・ここから） ----
+// ショートカットが渡した Health Planet API の生レスポンス(JSON)を {date,w,f} の配列に畳む。
+// tag 6021=体重 / 6022=体脂肪率（この2つしか API から返らない）。
+// 同じ日に複数の測定があれば「その日の最初」を採る（朝の測定を拾うため。
+// healthplanet.py の --pick first と同じ）。
+function parseHP(json){
+  const out={rows:[], height:null, error:null};
+  let p;
+  try{ p = (typeof json==="string") ? JSON.parse(json) : json; }
+  catch(e){ out.error="JSONとして読めませんでした"; return out; }
+  if(!p || typeof p!=="object" || Array.isArray(p)){ out.error="JSONとして読めませんでした"; return out; }
+  if(p.error){ out.error="APIがエラーを返しています（"+p.error+"）"; return out; }
+  if(!Array.isArray(p.data)){ out.error="data がありません"; return out; }
+
+  const h=parseFloat(p.height);
+  if(isFinite(h) && h>0) out.height=h;
+
+  // 測定時刻ごとにタグをまとめる
+  const byTs={};
+  for(const row of p.data){
+    if(!row || typeof row!=="object") continue;
+    const ts=String(row.date ?? "");
+    if(!/^\d{12}$/.test(ts)) continue;          // YYYYMMDDHHMM 以外は捨てる
+    const v=parseFloat(row.keydata);
+    if(!isFinite(v)) continue;
+    (byTs[ts] ??= {})[String(row.tag ?? "")]=v;
+  }
+
+  // 日付ごとに畳む（時刻の昇順で回し、その日の最初だけ採る）
+  const byDay={};
+  for(const ts of Object.keys(byTs).sort()){
+    const day=`${ts.slice(0,4)}-${ts.slice(4,6)}-${ts.slice(6,8)}`;
+    if(byDay[day]) continue;
+    const w=byTs[ts]["6021"];
+    if(!isFinite(w)) continue;                  // 体重の無い測定は採らない
+    const f=byTs[ts]["6022"];
+    byDay[day]={date:day, w:Math.round(w*100)/100, f:isFinite(f)?Math.round(f*10)/10:null};
+  }
+  out.rows=Object.keys(byDay).sort().map(d=>byDay[d]);
+  return out;
+}
+
+// 既存データへマージする。同じ日付は上書き。
+// ただし体脂肪は「既にあって新データに無い」場合だけ既存を残す（欠測で消さない）。
+function mergeHP(rows, cur){
+  const next=cur.slice(); let added=0, updated=0;
+  for(const r of rows){
+    const i=next.findIndex(e=>e.date===r.date);
+    if(i<0){ next.push({date:r.date, w:r.w, f:r.f}); added++; continue; }
+    const f=(r.f==null && next[i].f!=null) ? next[i].f : r.f;
+    if(next[i].w!==r.w || next[i].f!==f) updated++;
+    next[i]={date:r.date, w:r.w, f};
+  }
+  return {data:next, added, updated};
+}
+// ---- Health Planet 取込（テスト対象・ここまで） ----
+
+function applyHP(text){
+  const hint=document.getElementById("hint");
+  const res=parseHP(text);
+  if(res.error){ hint.textContent="取り込めませんでした："+res.error; return; }
+  if(!res.rows.length){ hint.textContent="取り込めるデータがありませんでした。"; return; }
+  const m=mergeHP(res.rows, data);
+  data=m.data;
+
+  // 身長：設定が既定値のまま（＝自分で入れていない）ときだけ体組成計の値を採る。
+  // 自分で入れた設定は黙って書き換えない。食い違うときは知らせるだけにする。
+  let note="";
+  if(res.height && Math.abs(res.height-set.h)>0.01){
+    if(Math.abs(set.h-DEF_SET.h)<0.01){
+      set.h=res.height; fillSettings();
+      note=` 身長を ${r1(res.height)}cm に合わせました。`;
+    }else{
+      note=` 体組成計の身長は ${r1(res.height)}cm です（設定は ${r1(set.h)}cm）。`;
+    }
+  }
+  const same=res.rows.length-m.added-m.updated;
+  hint.textContent=`${res.rows.length}件を読み込みました（新規 ${m.added}・更新 ${m.updated}・変更なし ${same}）。`+note;
+  render();
+}
+
+// ショートカットを呼ぶ（PWA 起点の場合）
+document.getElementById("sync").onclick=()=>{
+  const name=String(set.sc||"").trim();
+  if(!name){ document.getElementById("hint").textContent="設定に「ショートカット名」を入れてください。"; return; }
+  location.href="shortcuts://run-shortcut?name="+encodeURIComponent(name);
+};
+
+// CSV
+document.getElementById("export").onclick=()=>{
+  const head="date,weight,fat\n";
+  const body=[...data].sort((a,b)=>a.date<b.date?-1:1)
+    .map(e=>`${e.date},${e.w},${e.f??""}`).join("\n");
+  const blob=new Blob([head+body],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`weight_${todayStr()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById("import").onchange=ev=>{
+  const file=ev.target.files[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const lines=rd.result.split(/\r?\n/).filter(x=>x.trim());
+    let added=0;
+    for(const ln of lines){
+      const [d,w,f]=ln.split(",").map(s=>s.trim());
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;      // ヘッダ・不正行を飛ばす
+      if(isNaN(parseFloat(w))) continue;
+      upsert(d, r2(+w), f); added++;
+    }
+    ev.target.value="";
+    document.getElementById("hint").textContent=`${added}件を取り込みました。`;
+    render();
+  };
+  rd.readAsText(file);
+};
+
+window.addEventListener("resize", drawChart);
+fillSettings();
+render();
+
+// 起動時：ショートカットが付けた #hp=... を読む（ショートカット起点の場合）
+(function(){
+  const h=location.hash||"";
+  if(!h.startsWith("#hp=")) return;
+  let text;
+  try{ text=decodeURIComponent(h.slice(4)); }
+  catch(e){ document.getElementById("hint").textContent="URLを読めませんでした。"; return; }
+  // 二重取り込みを防ぐため、読んだらフラグメントを消す（file:// では失敗しうるので握りつぶす）
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){ location.hash=""; }
+  applyHP(text);
+})();
+
+// ---- ここから下は確認用のダミー（index.html には入っていない） ----
+store = function(){};
+data = [{"date": "2025-08-03", "w": 58.66, "f": 9.8}, {"date": "2025-08-04", "w": 58.77, "f": 10.2}, {"date": "2025-08-05", "w": 58.32, "f": 9.4}, {"date": "2025-08-06", "w": 58.59, "f": 9.8}, {"date": "2025-08-07", "w": 58.85, "f": 9.6}, {"date": "2025-08-08", "w": 59.31, "f": 9.2}, {"date": "2025-08-09", "w": 59.07, "f": 9.9}, {"date": "2025-08-10", "w": 58.28, "f": 10.4}, {"date": "2025-08-12", "w": 59.63, "f": 9.7}, {"date": "2025-08-13", "w": 58.23, "f": 10.0}, {"date": "2025-08-15", "w": 58.29, "f": 9.9}, {"date": "2025-08-16", "w": 58.74, "f": 10.4}, {"date": "2025-08-17", "w": 58.43, "f": 10.2}, {"date": "2025-08-18", "w": 58.47, "f": 10.6}, {"date": "2025-08-19", "w": 58.96, "f": 8.8}, {"date": "2025-08-20", "w": 59.05, "f": 10.5}, {"date": "2025-08-21", "w": 58.95, "f": 10.3}, {"date": "2025-08-23", "w": 59.14, "f": 10.5}, {"date": "2025-08-24", "w": 59.28, "f": 9.9}, {"date": "2025-08-25", "w": 58.83, "f": 10.2}, {"date": "2025-08-26", "w": 58.94, "f": 10.6}, {"date": "2025-08-27", "w": 58.71, "f": 9.9}, {"date": "2025-08-28", "w": 59.22, "f": 10.6}, {"date": "2025-08-29", "w": 58.78, "f": 10.2}, {"date": "2025-08-30", "w": 58.79, "f": 10.5}, {"date": "2025-08-31", "w": 58.96, "f": 9.9}, {"date": "2025-09-02", "w": 58.42, "f": 9.9}, {"date": "2025-09-04", "w": 59.47, "f": 10.5}, {"date": "2025-09-05", "w": 59.36, "f": 10.9}, {"date": "2025-09-06", "w": 58.97, "f": 10.6}, {"date": "2025-09-07", "w": 59.16, "f": 11.2}, {"date": "2025-09-08", "w": 58.95, "f": 10.4}, {"date": "2025-09-09", "w": 59.37, "f": 10.5}, {"date": "2025-09-10", "w": 59.58, "f": 10.4}, {"date": "2025-09-11", "w": 58.92, "f": 11.3}, {"date": "2025-09-12", "w": 58.82, "f": 10.2}, {"date": "2025-09-13", "w": 59.46, "f": 9.9}, {"date": "2025-09-14", "w": 59.81, "f": 10.9}, {"date": "2025-09-15", "w": 59.06, "f": 10.3}, {"date": "2025-09-16", "w": 59.81, "f": 10.7}, {"date": "2025-09-17", "w": 59.13, "f": 10.3}, {"date": "2025-09-18", "w": 60.07, "f": 10.5}, {"date": "2025-09-19", "w": 59.66, "f": 11.2}, {"date": "2025-09-20", "w": 59.83, "f": 10.7}, {"date": "2025-09-22", "w": 59.58, "f": 12.0}, {"date": "2025-09-23", "w": 59.29, "f": 10.8}, {"date": "2025-09-24", "w": 59.28, "f": 10.2}, {"date": "2025-09-25", "w": 59.3, "f": 10.1}, {"date": "2025-09-27", "w": 59.63, "f": 10.9}, {"date": "2025-09-28", "w": 59.5, "f": 10.5}, {"date": "2025-09-29", "w": 60.08, "f": 10.9}, {"date": "2025-09-30", "w": 59.9, "f": 10.6}, {"date": "2025-10-01", "w": 59.36, "f": 10.9}, {"date": "2025-10-02", "w": 59.52, "f": 10.6}, {"date": "2025-10-03", "w": 60.04, "f": 11.4}, {"date": "2025-10-04", "w": 59.68, "f": 11.1}, {"date": "2025-10-05", "w": 59.68, "f": 11.2}, {"date": "2025-10-06", "w": 59.3, "f": 10.1}, {"date": "2025-10-07", "w": 59.34, "f": 11.0}, {"date": "2025-10-08", "w": 60.25, "f": 11.0}, {"date": "2025-10-09", "w": 59.55, "f": 10.7}, {"date": "2025-10-10", "w": 59.82, "f": 11.3}, {"date": "2025-10-11", "w": 59.6, "f": 10.8}, {"date": "2025-10-12", "w": 59.84, "f": 10.6}, {"date": "2025-10-13", "w": 60.15, "f": 11.1}, {"date": "2025-10-14", "w": 59.8, "f": 11.7}, {"date": "2025-10-15", "w": 59.52, "f": 11.7}, {"date": "2025-10-16", "w": 59.4, "f": 11.0}, {"date": "2025-10-18", "w": 59.95, "f": 12.0}, {"date": "2025-10-19", "w": 60.07, "f": 11.5}, {"date": "2025-10-20", "w": 60.54, "f": 11.6}, {"date": "2025-10-21", "w": 60.79, "f": 11.2}, {"date": "2025-10-22", "w": 60.31, "f": 11.3}, {"date": "2025-10-24", "w": 60.02, "f": 12.0}, {"date": "2025-10-25", "w": 59.99, "f": 11.8}, {"date": "2025-10-26", "w": 60.29, "f": 11.5}, {"date": "2025-10-27", "w": 59.77, "f": 10.6}, {"date": "2025-10-28", "w": 60.41, "f": 11.0}, {"date": "2025-10-29", "w": 60.16, "f": 11.3}, {"date": "2025-10-30", "w": 60.3, "f": 11.9}, {"date": "2025-10-31", "w": 61.21, "f": 10.8}, {"date": "2025-11-01", "w": 60.04, "f": 11.6}, {"date": "2025-11-02", "w": 60.45, "f": 11.5}, {"date": "2025-11-03", "w": 60.11, "f": 11.3}, {"date": "2025-11-04", "w": 60.28, "f": 11.4}, {"date": "2025-11-05", "w": 60.12, "f": 11.3}, {"date": "2025-11-07", "w": 60.23, "f": 11.5}, {"date": "2025-11-09", "w": 60.86, "f": 11.2}, {"date": "2025-11-10", "w": 59.96, "f": 12.0}, {"date": "2025-11-11", "w": 59.94, "f": 11.4}, {"date": "2025-11-12", "w": 60.35, "f": 12.0}, {"date": "2025-11-13", "w": 60.27, "f": 12.0}, {"date": "2025-11-14", "w": 60.09, "f": 11.2}, {"date": "2025-11-15", "w": 60.48, "f": 11.4}, {"date": "2025-11-17", "w": 60.16, "f": 12.0}, {"date": "2025-11-18", "w": 60.46, "f": 11.6}, {"date": "2025-11-19", "w": 60.18, "f": 11.6}, {"date": "2025-11-20", "w": 60.35, "f": 11.9}, {"date": "2025-11-21", "w": 59.84, "f": 12.1}, {"date": "2025-11-22", "w": 60.23, "f": 11.2}, {"date": "2025-11-23", "w": 60.57, "f": 11.5}, {"date": "2025-11-24", "w": 59.94, "f": 11.6}, {"date": "2025-11-25", "w": 60.64, "f": 11.9}, {"date": "2025-11-26", "w": 60.33, "f": 11.5}, {"date": "2025-11-27", "w": 60.42, "f": 12.0}, {"date": "2025-11-28", "w": 60.78, "f": 11.6}, {"date": "2025-11-30", "w": 60.78, "f": 12.0}, {"date": "2025-12-01", "w": 61.04, "f": 12.1}, {"date": "2025-12-02", "w": 60.4, "f": 11.7}, {"date": "2025-12-03", "w": 61.3, "f": 12.0}, {"date": "2025-12-04", "w": 60.89, "f": 10.9}, {"date": "2025-12-05", "w": 60.79, "f": 12.5}, {"date": "2025-12-06", "w": 60.79, "f": 11.8}, {"date": "2025-12-07", "w": 60.38, "f": 12.4}, {"date": "2025-12-08", "w": 60.36, "f": 11.9}, {"date": "2025-12-09", "w": 60.0, "f": 12.3}, {"date": "2025-12-10", "w": 61.27, "f": 12.4}, {"date": "2025-12-11", "w": 60.83, "f": 11.6}, {"date": "2025-12-12", "w": 60.7, "f": 12.5}, {"date": "2025-12-13", "w": 60.68, "f": 12.7}, {"date": "2025-12-14", "w": 60.99, "f": 12.7}, {"date": "2025-12-15", "w": 60.65, "f": 12.7}, {"date": "2025-12-16", "w": 60.81, "f": 13.0}, {"date": "2025-12-17", "w": 61.13, "f": 12.5}, {"date": "2025-12-18", "w": 61.02, "f": 12.6}, {"date": "2025-12-19", "w": 60.92, "f": 12.9}, {"date": "2025-12-21", "w": 61.2, "f": 12.5}, {"date": "2025-12-22", "w": 60.87, "f": 12.7}, {"date": "2025-12-24", "w": 61.14, "f": 11.7}, {"date": "2025-12-25", "w": 61.02, "f": 13.0}, {"date": "2025-12-26", "w": 61.14, "f": 12.0}, {"date": "2025-12-27", "w": 60.85, "f": 11.9}, {"date": "2025-12-28", "w": 61.25, "f": 12.1}, {"date": "2025-12-29", "w": 61.36, "f": 13.3}, {"date": "2025-12-30", "w": 61.7, "f": 12.7}, {"date": "2025-12-31", "w": 61.18, "f": 12.5}, {"date": "2026-01-01", "w": 60.94, "f": 12.2}, {"date": "2026-01-02", "w": 60.83, "f": 12.4}, {"date": "2026-01-03", "w": 61.51, "f": 12.6}, {"date": "2026-01-05", "w": 61.53, "f": 12.4}, {"date": "2026-01-06", "w": 60.51, "f": 12.8}, {"date": "2026-01-07", "w": 61.1, "f": 13.2}, {"date": "2026-01-09", "w": 61.73, "f": 12.3}, {"date": "2026-01-10", "w": 61.89, "f": 13.4}, {"date": "2026-01-11", "w": 61.32, "f": 12.7}, {"date": "2026-01-12", "w": 61.52, "f": 12.6}, {"date": "2026-01-13", "w": 61.57, "f": 12.7}, {"date": "2026-01-14", "w": 61.62, "f": 12.9}, {"date": "2026-01-15", "w": 61.65, "f": 12.7}, {"date": "2026-01-16", "w": 61.92, "f": 13.1}, {"date": "2026-01-17", "w": 61.36, "f": 12.7}, {"date": "2026-01-18", "w": 61.89, "f": 13.1}, {"date": "2026-01-19", "w": 61.12, "f": 12.8}, {"date": "2026-01-20", "w": 62.13, "f": 12.7}, {"date": "2026-01-21", "w": 61.57, "f": 13.5}, {"date": "2026-01-22", "w": 61.44, "f": 13.0}, {"date": "2026-01-23", "w": 61.21, "f": 12.8}, {"date": "2026-01-24", "w": 61.68, "f": 13.4}, {"date": "2026-01-25", "w": 61.59, "f": 12.6}, {"date": "2026-01-26", "w": 61.42, "f": 12.2}, {"date": "2026-01-27", "w": 61.42, "f": 13.3}, {"date": "2026-01-30", "w": 61.66, "f": 13.1}, {"date": "2026-01-31", "w": 61.84, "f": 13.0}, {"date": "2026-02-01", "w": 61.78, "f": 14.4}, {"date": "2026-02-02", "w": 61.33, "f": 13.8}, {"date": "2026-02-03", "w": 61.39, "f": 13.0}, {"date": "2026-02-04", "w": 61.59, "f": 13.7}, {"date": "2026-02-05", "w": 61.92, "f": 13.7}, {"date": "2026-02-06", "w": 61.46, "f": 14.3}, {"date": "2026-02-07", "w": 61.5, "f": 13.1}, {"date": "2026-02-08", "w": 62.12, "f": 12.8}, {"date": "2026-02-09", "w": 62.19, "f": 13.1}, {"date": "2026-02-10", "w": 61.93, "f": 13.2}, {"date": "2026-02-11", "w": 61.49, "f": 13.1}, {"date": "2026-02-13", "w": 61.72, "f": 14.0}, {"date": "2026-02-15", "w": 62.3, "f": 13.5}, {"date": "2026-02-16", "w": 62.02, "f": 12.6}, {"date": "2026-02-17", "w": 62.95, "f": 14.4}, {"date": "2026-02-19", "w": 62.25, "f": 13.5}, {"date": "2026-02-20", "w": 62.54, "f": 12.8}, {"date": "2026-02-21", "w": 61.86, "f": 14.2}, {"date": "2026-02-22", "w": 61.96, "f": 14.0}, {"date": "2026-02-23", "w": 62.31, "f": 13.5}, {"date": "2026-02-24", "w": 62.71, "f": 13.4}, {"date": "2026-02-25", "w": 62.95, "f": 13.1}, {"date": "2026-02-26", "w": 62.38, "f": 13.8}, {"date": "2026-02-27", "w": 62.66, "f": 13.4}, {"date": "2026-02-28", "w": 62.07, "f": 13.2}, {"date": "2026-03-01", "w": 62.37, "f": 13.8}, {"date": "2026-03-02", "w": 62.13, "f": 13.0}, {"date": "2026-03-03", "w": 62.43, "f": 13.6}, {"date": "2026-03-04", "w": 62.55, "f": 13.9}, {"date": "2026-03-05", "w": 62.09, "f": 12.6}, {"date": "2026-03-06", "w": 62.52, "f": 13.7}, {"date": "2026-03-07", "w": 62.26, "f": 13.0}, {"date": "2026-03-08", "w": 62.61, "f": 13.8}, {"date": "2026-03-09", "w": 62.8, "f": 13.4}, {"date": "2026-03-10", "w": 62.7, "f": 13.4}, {"date": "2026-03-11", "w": 62.93, "f": 13.3}, {"date": "2026-03-12", "w": 62.77, "f": 13.7}, {"date": "2026-03-13", "w": 62.8, "f": 13.7}, {"date": "2026-03-14", "w": 62.38, "f": 13.7}, {"date": "2026-03-16", "w": 62.8, "f": 13.7}, {"date": "2026-03-17", "w": 62.84, "f": 14.4}, {"date": "2026-03-19", "w": 62.95, "f": 14.0}, {"date": "2026-03-20", "w": 62.94, "f": 14.3}, {"date": "2026-03-21", "w": 62.69, "f": 13.9}, {"date": "2026-03-22", "w": 62.64, "f": 13.3}, {"date": "2026-03-23", "w": 62.58, "f": 13.4}, {"date": "2026-03-24", "w": 62.76, "f": 14.4}, {"date": "2026-03-25", "w": 62.71, "f": 14.2}, {"date": "2026-03-26", "w": 62.3, "f": 13.6}, {"date": "2026-03-27", "w": 62.21, "f": 14.1}, {"date": "2026-03-28", "w": 63.13, "f": 14.7}, {"date": "2026-03-29", "w": 62.6, "f": 13.5}, {"date": "2026-03-30", "w": 62.66, "f": 14.2}, {"date": "2026-03-31", "w": 62.71, "f": 14.2}, {"date": "2026-04-01", "w": 62.36, "f": 14.0}, {"date": "2026-04-02", "w": 63.06, "f": 13.9}, {"date": "2026-04-03", "w": 62.79, "f": 15.1}, {"date": "2026-04-04", "w": 63.44, "f": 14.0}, {"date": "2026-04-05", "w": 63.31, "f": 14.4}, {"date": "2026-04-06", "w": 62.88, "f": 14.4}, {"date": "2026-04-07", "w": 63.66, "f": 14.4}, {"date": "2026-04-08", "w": 63.37, "f": 15.0}, {"date": "2026-04-09", "w": 62.78, "f": 13.8}, {"date": "2026-04-10", "w": 63.36, "f": 14.0}, {"date": "2026-04-11", "w": 63.8, "f": 13.9}, {"date": "2026-04-12", "w": 63.45, "f": 14.8}, {"date": "2026-04-13", "w": 63.29, "f": 14.7}, {"date": "2026-04-14", "w": 62.65, "f": 14.4}, {"date": "2026-04-15", "w": 63.51, "f": 13.8}, {"date": "2026-04-16", "w": 63.56, "f": 13.6}, {"date": "2026-04-17", "w": 63.14, "f": 13.7}, {"date": "2026-04-18", "w": 63.29, "f": 13.6}, {"date": "2026-04-19", "w": 63.4, "f": 15.2}, {"date": "2026-04-20", "w": 63.38, "f": 14.0}, {"date": "2026-04-21", "w": 63.41, "f": 14.0}, {"date": "2026-04-22", "w": 63.08, "f": 15.9}, {"date": "2026-04-23", "w": 63.15, "f": 14.5}, {"date": "2026-04-24", "w": 63.17, "f": 14.3}, {"date": "2026-04-25", "w": 63.38, "f": 14.6}, {"date": "2026-04-26", "w": 63.49, "f": 13.9}, {"date": "2026-04-27", "w": 63.6, "f": 14.8}, {"date": "2026-04-28", "w": 63.2, "f": 14.1}, {"date": "2026-04-29", "w": 63.54, "f": 14.9}, {"date": "2026-04-30", "w": 63.69, "f": 15.1}, {"date": "2026-05-01", "w": 63.03, "f": 14.8}, {"date": "2026-05-02", "w": 63.31, "f": 14.8}, {"date": "2026-05-03", "w": 62.92, "f": 14.7}, {"date": "2026-05-04", "w": 63.57, "f": 14.4}, {"date": "2026-05-05", "w": 63.53, "f": 14.9}, {"date": "2026-05-06", "w": 63.22, "f": 14.9}, {"date": "2026-05-07", "w": 62.93, "f": 14.6}, {"date": "2026-05-08", "w": 63.17, "f": 13.3}, {"date": "2026-05-09", "w": 63.22, "f": 14.2}, {"date": "2026-05-10", "w": 62.66, "f": 13.5}, {"date": "2026-05-11", "w": 62.91, "f": 14.3}, {"date": "2026-05-12", "w": 62.53, "f": 12.9}, {"date": "2026-05-14", "w": 63.15, "f": 13.5}, {"date": "2026-05-15", "w": 62.5, "f": 13.7}, {"date": "2026-05-16", "w": 62.65, "f": 13.5}, {"date": "2026-05-17", "w": 62.63, "f": 13.4}, {"date": "2026-05-18", "w": 62.7, "f": 13.8}, {"date": "2026-05-20", "w": 62.39, "f": 13.2}, {"date": "2026-05-21", "w": 62.34, "f": 12.8}, {"date": "2026-05-22", "w": 62.15, "f": 13.3}, {"date": "2026-05-23", "w": 62.54, "f": 13.0}, {"date": "2026-05-24", "w": 62.48, "f": 13.5}, {"date": "2026-05-25", "w": 61.83, "f": 13.4}, {"date": "2026-05-26", "w": 62.77, "f": 12.3}, {"date": "2026-05-28", "w": 61.83, "f": 12.5}, {"date": "2026-05-29", "w": 62.29, "f": 12.3}, {"date": "2026-05-30", "w": 61.94, "f": 11.9}, {"date": "2026-05-31", "w": 61.31, "f": 12.4}, {"date": "2026-06-01", "w": 62.19, "f": 12.3}, {"date": "2026-06-02", "w": 61.46, "f": 12.9}, {"date": "2026-06-04", "w": 60.87, "f": 12.3}, {"date": "2026-06-05", "w": 61.08, "f": 12.5}, {"date": "2026-06-06", "w": 62.19, "f": 12.2}, {"date": "2026-06-07", "w": 61.15, "f": 11.6}, {"date": "2026-06-08", "w": 61.02, "f": 13.0}, {"date": "2026-06-09", "w": 61.45, "f": 12.2}, {"date": "2026-06-10", "w": 60.86, "f": 11.4}, {"date": "2026-06-12", "w": 60.49, "f": 11.7}, {"date": "2026-06-13", "w": 60.92, "f": 11.6}, {"date": "2026-06-14", "w": 61.07, "f": 12.2}, {"date": "2026-06-15", "w": 60.9, "f": 12.2}, {"date": "2026-06-16", "w": 60.97, "f": 11.1}, {"date": "2026-06-17", "w": 60.74, "f": 10.5}, {"date": "2026-06-18", "w": 60.58, "f": 12.0}, {"date": "2026-06-20", "w": 61.46, "f": 11.3}, {"date": "2026-06-21", "w": 60.15, "f": 10.6}, {"date": "2026-06-22", "w": 60.25, "f": 11.3}, {"date": "2026-06-23", "w": 60.61, "f": 10.2}, {"date": "2026-06-24", "w": 60.68, "f": 10.9}, {"date": "2026-06-26", "w": 60.37, "f": 11.1}, {"date": "2026-06-27", "w": 60.35, "f": 10.5}, {"date": "2026-06-28", "w": 60.03, "f": 10.7}, {"date": "2026-06-29", "w": 60.8, "f": 11.5}, {"date": "2026-06-30", "w": 59.56, "f": 10.1}, {"date": "2026-07-01", "w": 59.82, "f": 9.5}, {"date": "2026-07-02", "w": 60.25, "f": 11.1}, {"date": "2026-07-03", "w": 59.92, "f": 11.5}, {"date": "2026-07-04", "w": 60.07, "f": 10.1}, {"date": "2026-07-05", "w": 59.28, "f": 10.4}, {"date": "2026-07-06", "w": 59.68, "f": 10.5}, {"date": "2026-07-07", "w": 59.94, "f": 11.0}, {"date": "2026-07-08", "w": 59.48, "f": 10.7}, {"date": "2026-07-09", "w": 59.56, "f": 10.6}, {"date": "2026-07-10", "w": 59.7, "f": 10.1}, {"date": "2026-07-11", "w": 59.23, "f": 9.5}, {"date": "2026-07-12", "w": 59.72, "f": 10.0}, {"date": "2026-07-13", "w": 59.94, "f": 9.9}, {"date": "2026-07-14", "w": 59.9, "f": 10.0}, {"date": "2026-07-15", "w": 59.23, "f": 10.1}, {"date": "2026-07-16", "w": 59.17, "f": 10.6}, {"date": "2026-07-17", "w": 58.92, "f": 9.9}, {"date": "2026-07-18", "w": 58.91, "f": 9.4}, {"date": "2026-07-19", "w": 59.08, "f": 8.3}, {"date": "2026-07-20", "w": 58.74, "f": 9.1}, {"date": "2026-07-21", "w": 59.0, "f": 9.7}, {"date": "2026-07-22", "w": 58.64, "f": 9.7}, {"date": "2026-07-24", "w": 58.82, "f": 8.7}, {"date": "2026-07-25", "w": 58.34, "f": 9.1}, {"date": "2026-07-26", "w": 58.44, "f": 9.3}, {"date": "2026-07-28", "w": 58.38, "f": 8.6}, {"date": "2026-07-29", "w": 59.39, "f": 8.8}, {"date": "2026-07-30", "w": 58.27, "f": 8.9}, {"date": "2026-07-31", "w": 59.01, "f": 9.1}, {"date": "2026-08-01", "w": 58.73, "f": 8.8}, {"date": "2026-08-02", "w": 58.87, "f": 8.8}, {"date": "2026-08-03", "w": 57.98, "f": 7.9}];
+set.h=164.5; set.wmax=65; set.fmax=15; set.ffmi=21.3;
+fillSettings(); render();
+document.querySelector('h1').insertAdjacentHTML('beforeend',  ' <span class="muted" style="font-size:12px">見本（保存しません）</span>');
+</script>
+</body>
+</html>
