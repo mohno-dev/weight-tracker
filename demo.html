@@ -301,15 +301,18 @@ function renderLatest(){
 
 function renderStats(){
   const latest=data[0]; // 新しい順の先頭
-  const wWeek=recentAvg("w",7), wMonth=recentAvg("w",30), fWeek=recentAvg("f",7);
-  const l = latest?lbm(latest):null, fi = latest?ffmi(latest):null;
+  // ここは平均で見る（1日の値は水分で振れる）。
+  // 体重だけ7日と30日の両方。体脂肪・除脂肪・FFMI は BIA のばらつきが大きく、
+  // かつ計画が年単位（FFMI 月0.11）なので30日で揃える。短期の動きはグラフで見る。
+  const wWeek=recentAvg("w",7), wMonth=recentAvg("w",30);
+  const fMonth=recentAvg("f",30), lMonth=recentAvg("lbm",30), fiMonth=recentAvg("ffmi",30);
   const wRoom = wWeek!=null? set.wmax-wWeek : null;   // 上限体重までの余裕（週平均基準）
   const cells=[
     ["週平均", wWeek!=null?r2(wWeek):"—", "kg", "直近7日", true],
     ["月平均", wMonth!=null?r2(wMonth):"—", "kg", "直近30日", true],
-    ["体脂肪", fWeek!=null?r1(fWeek):"—", "%", "直近7日", true],
-    ["除脂肪", l!=null?r2(l):"—", "kg", latest&&latest.f!=null?"":"要 体脂肪", false],
-    ["FFMI", fi!=null?r1(fi):"—", "", `目標 ${set.ffmi}`, false],
+    ["体脂肪", fMonth!=null?r1(fMonth):"—", "%", "直近30日", true],
+    ["除脂肪", lMonth!=null?r2(lMonth):"—", "kg", latest&&latest.f!=null?"直近30日":"要 体脂肪", true],
+    ["FFMI", fiMonth!=null?r1(fiMonth):"—", "", "直近30日", true],
     ["上限まで", wRoom!=null?(wRoom>=0?r2(wRoom):r2(wRoom)):"—", "kg", `${set.wmax}kg`, false, wRoom!=null&&wRoom<0],
   ];
   document.getElementById("stats").innerHTML = cells.map(c=>`
@@ -330,6 +333,13 @@ function renderPace(){
   const ms=groupAvg("m","w");
   if(ms.length>=2){ const d=ms[ms.length-1].v-ms[ms.length-2].v;
     p.push(`前月比 <b>${d>=0?'+':''}${r2(d)}</b> kg`); }
+  // 目標FFMI までの残り（セルからラベルが消えたぶんここで出す）
+  const fiW=recentAvg("ffmi",30);
+  if(fiW!=null && set.ffmi){
+    const gap=set.ffmi-fiW;
+    p.push(`目標FFMI <b>${set.ffmi}</b> まで <b>${gap>0?"+":""}${r1(gap)}</b>`
+      + `（除脂肪 <b>${gap>0?"+":""}${r2(gap*hm()*hm())}</b> kg）`);
+  }
   // 計画の目安（年1.33kg=月0.11kg）
   if(sw!=null){ const perMonth=sw*4.345;
     const tag = Math.abs(perMonth)<=0.2? "計画ペース内" : (perMonth>0.2? "増加が速い" : "減少が速い");
