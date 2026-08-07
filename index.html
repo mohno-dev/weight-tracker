@@ -162,10 +162,10 @@
   <details>
     <summary>設定・バックアップ</summary>
     <div class="setgrid">
-      <div><label>身長 cm</label><input type="number" id="s-h" step="0.1"></div>
-      <div><label>上限体重 kg</label><input type="number" id="s-wmax" step="0.5"></div>
-      <div><label>上限体脂肪 %</label><input type="number" id="s-fmax" step="0.5"></div>
-      <div><label>目標FFMI</label><input type="number" id="s-ffmi" step="0.1"></div>
+      <div><label>身長 cm</label><input type="number" id="s-h" inputmode="decimal" step="0.1"></div>
+      <div><label>上限体重 kg</label><input type="number" id="s-wmax" inputmode="decimal" step="0.1"></div>
+      <div><label>上限体脂肪 %</label><input type="number" id="s-fmax" inputmode="decimal" step="0.1"></div>
+      <div><label>目標FFMI</label><input type="number" id="s-ffmi" inputmode="decimal" step="0.1"></div>
       <div style="grid-column:1/-1"><label>ショートカット名（取り込み用）</label><input type="text" id="s-sc" placeholder="Sync"></div>
       <div><label>GitHub owner</label><input type="text" id="s-gho" placeholder="mohno-dev"></div>
       <div><label>データのリポジトリ</label><input type="text" id="s-ghr" placeholder="weight-data"></div>
@@ -606,7 +606,13 @@ document.getElementById("save-set").onclick=()=>{
   document.getElementById("hint").textContent="設定を保存しました。";
   render();
   // 未設定のまま押されたときは、何が足りないかをその場に出す（無反応に見せない）
-  if(ghConfigured()){ ghSyncNow(true); }
+  // ★既に同期済みなら「取りに行く」のでなく「送る」。ここで ghSyncNow を呼ぶと、
+  //   いま入力した設定が GitHub 側の古い値で上書きされて元に戻ってしまう。
+  //   送るのは render()→store()→schedulePush() が受け持つ。
+  if(ghConfigured()){
+    if(ghReady) ghState("設定を保存しました。GitHub へ送ります…");
+    else ghSyncNow(true);
+  }
   else{
     const miss=[["owner",gh.owner],["リポジトリ",gh.repo],["ファイル",gh.path],["トークン",gh.token]]
       .filter(x=>!x[1]).map(x=>x[0]);
