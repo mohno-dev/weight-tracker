@@ -194,7 +194,7 @@ const KEY="wt_data", SKEY="wt_settings", GKEY="wt_gh";
 // 既定値は一般的な値。自分の身長・目標は「設定」で入れる（この端末に保存される）。
 const DEF_SET={ h:170, wmax:75, fmax:20, ffmi:20, sc:"Sync" };
 // GitHub（データの置き場）。トークンは設定とは別のキーに置き、CSV書き出しには含めない。
-const DEF_GH={ owner:"", repo:"weight-data", path:"data.json", branch:"main", token:"" };
+const DEF_GH={ owner:"mohno-dev", repo:"weight-data", path:"data.json", branch:"main", token:"" };
 
 let data = load(KEY, []);          // [{date:"YYYY-MM-DD", w:Number, f:Number|null}]
 let set  = Object.assign({}, DEF_SET, load(SKEY, {}));
@@ -605,7 +605,14 @@ document.getElementById("save-set").onclick=()=>{
   storeGh();
   document.getElementById("hint").textContent="設定を保存しました。";
   render();
-  if(ghConfigured()) ghSyncNow(true);
+  // 未設定のまま押されたときは、何が足りないかをその場に出す（無反応に見せない）
+  if(ghConfigured()){ ghSyncNow(true); }
+  else{
+    const miss=[["owner",gh.owner],["リポジトリ",gh.repo],["ファイル",gh.path],["トークン",gh.token]]
+      .filter(x=>!x[1]).map(x=>x[0]);
+    ghState(miss.length? "GitHub は未設定です（"+miss.join("・")+" が空です）。"
+                       : "GitHub は未設定です。");
+  }
 };
 
 // ---- Health Planet 取込（テスト対象・ここから） ----
