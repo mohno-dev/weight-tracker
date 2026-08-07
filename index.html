@@ -96,6 +96,7 @@
   <div class="latest" id="latest"></div>
   <div class="toolbar">
     <button class="ghost" id="sync">体組成計から取り込む</button>
+    <button class="ghost" id="ghsync">GitHubと同期</button>
   </div>
   <div class="muted" id="hint" style="margin-top:8px"></div>
   <details style="margin-top:10px">
@@ -166,6 +167,11 @@
       <div><label>上限体脂肪 %</label><input type="number" id="s-fmax" step="0.5"></div>
       <div><label>目標FFMI</label><input type="number" id="s-ffmi" step="0.1"></div>
       <div style="grid-column:1/-1"><label>ショートカット名（取り込み用）</label><input type="text" id="s-sc" placeholder="Sync"></div>
+      <div><label>GitHub owner</label><input type="text" id="s-gho" placeholder="mohno-dev"></div>
+      <div><label>データのリポジトリ</label><input type="text" id="s-ghr" placeholder="weight-data"></div>
+      <div><label>ファイル</label><input type="text" id="s-ghp" placeholder="data.json"></div>
+      <div><label>ブランチ</label><input type="text" id="s-ghb" placeholder="main"></div>
+      <div style="grid-column:1/-1"><label>GitHub トークン（この端末にのみ保存）</label><input type="password" id="s-ght" placeholder="github_pat_..."></div>
     </div>
     <div class="toolbar">
       <button class="ghost" id="save-set">設定を保存</button>
@@ -175,23 +181,29 @@
       </label>
     </div>
     <div class="muted" style="margin-top:10px">
-      データはこの端末（ブラウザ）にのみ保存されます。機種変・バックアップはCSV書き出しで。
+      GitHub を設定すると、記録は private リポジトリに保存され、Windows・Mac・iPhone で同じデータを見られます。<br>
+      未設定のときは この端末（ブラウザ）にのみ保存されます。バックアップはCSV書き出しで。
     </div>
+    <div class="muted" id="gh-state" style="margin-top:6px"></div>
   </details>
 </div>
 
 <script>
 "use strict";
-const KEY="wt_data", SKEY="wt_settings";
+const KEY="wt_data", SKEY="wt_settings", GKEY="wt_gh";
 // 既定値は一般的な値。自分の身長・目標は「設定」で入れる（この端末に保存される）。
 const DEF_SET={ h:170, wmax:75, fmax:20, ffmi:20, sc:"Sync" };
+// GitHub（データの置き場）。トークンは設定とは別のキーに置き、CSV書き出しには含めない。
+const DEF_GH={ owner:"", repo:"weight-data", path:"data.json", branch:"main", token:"" };
 
 let data = load(KEY, []);          // [{date:"YYYY-MM-DD", w:Number, f:Number|null}]
 let set  = Object.assign({}, DEF_SET, load(SKEY, {}));
+let gh   = Object.assign({}, DEF_GH,  load(GKEY, {}));
 let metrics=["w"], gran="w", range="all";   // グラフに出す項目（最大2）
 
 function load(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }
-function store(){ localStorage.setItem(KEY, JSON.stringify(data)); localStorage.setItem(SKEY, JSON.stringify(set)); }
+function store(){ localStorage.setItem(KEY, JSON.stringify(data)); localStorage.setItem(SKEY, JSON.stringify(set)); schedulePush(); }
+function storeGh(){ localStorage.setItem(GKEY, JSON.stringify(gh)); }
 const r2=x=>Math.round(x*100)/100, r1=x=>Math.round(x*10)/10;
 const hm = ()=> set.h/100;
 
@@ -575,15 +587,25 @@ document.getElementById("range").onclick=e=>{ const b=e.target.closest("button")
 // 設定
 function fillSettings(){ document.getElementById("s-h").value=set.h; document.getElementById("s-wmax").value=set.wmax;
   document.getElementById("s-fmax").value=set.fmax; document.getElementById("s-ffmi").value=set.ffmi;
-  document.getElementById("s-sc").value=set.sc??DEF_SET.sc; }
+  document.getElementById("s-sc").value=set.sc??DEF_SET.sc;
+  document.getElementById("s-gho").value=gh.owner; document.getElementById("s-ghr").value=gh.repo;
+  document.getElementById("s-ghp").value=gh.path;  document.getElementById("s-ghb").value=gh.branch;
+  document.getElementById("s-ght").value=gh.token; }
 document.getElementById("save-set").onclick=()=>{
   set.h=+document.getElementById("s-h").value||DEF_SET.h;
   set.wmax=+document.getElementById("s-wmax").value||DEF_SET.wmax;
   set.fmax=+document.getElementById("s-fmax").value||DEF_SET.fmax;
   set.ffmi=+document.getElementById("s-ffmi").value||DEF_SET.ffmi;
   set.sc=document.getElementById("s-sc").value.trim()||DEF_SET.sc;
+  gh.owner =document.getElementById("s-gho").value.trim();
+  gh.repo  =document.getElementById("s-ghr").value.trim()||DEF_GH.repo;
+  gh.path  =document.getElementById("s-ghp").value.trim()||DEF_GH.path;
+  gh.branch=document.getElementById("s-ghb").value.trim()||DEF_GH.branch;
+  gh.token =document.getElementById("s-ght").value.trim();
+  storeGh();
   document.getElementById("hint").textContent="設定を保存しました。";
   render();
+  if(ghConfigured()) ghSyncNow(true);
 };
 
 // ---- Health Planet 取込（テスト対象・ここから） ----
@@ -702,6 +724,148 @@ document.getElementById("import").onchange=ev=>{
   rd.readAsText(file);
 };
 
+// ---- GitHub 同期（テスト対象・ここから） ----
+// 記録の置き場を private リポジトリの1ファイルにして、Windows・Mac・iPhone で同じものを見る。
+//
+// マージの規則（GitHub を正とする）
+//   ・同じ日付はリモートを採る
+//   ・ただし体脂肪は「片方だけ埋まっている」なら埋まっている方を残す（欠測で消さない）
+//   ・ローカルにしか無い日付は残す（送信できていない分を落とさないため）
+// 削除は、消したあと GitHub にも送るので伝わる。ただし別の端末が古いまま起動すると
+// その端末のローカルから復活しうる（1人で使う前提の割り切り）。
+function mergeRemote(remote, local){
+  const by={};
+  for(const e of (local||[])){ if(e&&e.date) by[e.date]={date:e.date, w:e.w, f:e.f??null}; }
+  let added=0, updated=0;
+  for(const r of (remote||[])){
+    if(!r||!r.date) continue;
+    const cur=by[r.date];
+    if(!cur){ by[r.date]={date:r.date, w:r.w, f:r.f??null}; added++; continue; }
+    const f=(r.f==null && cur.f!=null) ? cur.f : (r.f??null);
+    if(cur.w!==r.w || cur.f!==f) updated++;
+    by[r.date]={date:r.date, w:r.w, f};
+  }
+  return {rows:Object.values(by).sort((a,b)=>a.date<b.date?1:-1), added, updated};
+}
+// 保存する形。読むときは素の配列（古い形）も受ける。
+function packRows(rows, iso){
+  return {v:1, updated:iso, rows:[...rows].sort((a,b)=>a.date<b.date?-1:1)};
+}
+function unpackRows(obj){
+  if(Array.isArray(obj)) return obj;
+  if(obj && Array.isArray(obj.rows)) return obj.rows;
+  return null;
+}
+// 中身が同じかを比べるための正規形（並び順の違いで差があるように見せない）
+function rowsKey(rows){ return JSON.stringify(packRows(rows||[],"").rows); }
+// ---- GitHub 同期（テスト対象・ここまで） ----
+
+const GH_API="https://api.github.com";
+let ghSha=null, ghReady=false, ghBusy=false, lastPushed=null, pushTimer=null;
+
+function ghConfigured(){ return !!(gh.token && gh.owner && gh.repo && gh.path); }
+function ghState(msg){ const el=document.getElementById("gh-state"); if(el) el.textContent=msg; }
+function ghHeaders(){
+  return { Authorization:"Bearer "+gh.token, Accept:"application/vnd.github+json",
+           "X-GitHub-Api-Version":"2022-11-28" };
+}
+function ghUrl(){
+  const p=String(gh.path).split("/").map(encodeURIComponent).join("/");
+  return `${GH_API}/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}/contents/${p}`;
+}
+// UTF-8 ⇔ base64（GitHub の contents API は base64 でやり取りする）
+function b64enc(s){
+  const b=new TextEncoder().encode(s); let bin=""; const CH=0x8000;
+  for(let i=0;i<b.length;i+=CH) bin+=String.fromCharCode.apply(null, b.subarray(i,i+CH));
+  return btoa(bin);
+}
+function b64dec(x){
+  const bin=atob(String(x).replace(/\s/g,""));
+  const a=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(a);
+}
+async function ghMessage(r){
+  let m=""; try{ const j=await r.json(); m=j.message||""; }catch(e){}
+  if(r.status===401) return "トークンが無効か期限切れです（401）";
+  if(r.status===403) return "権限が足りません（403）"+(m?"："+m:"");
+  if(r.status===404) return "リポジトリかファイルの場所が見つかりません（404）";
+  return `GitHub エラー ${r.status}`+(m?"："+m:"");
+}
+async function ghGet(){
+  const u=ghUrl()+"?ref="+encodeURIComponent(gh.branch)+"&t="+Date.now();
+  const r=await fetch(u,{headers:ghHeaders(), cache:"no-store"});
+  if(r.status===404) return {rows:[], sha:null, missing:true};   // 初回＝ファイルがまだ無い
+  if(!r.ok) throw new Error(await ghMessage(r));
+  const j=await r.json();
+  let rows;
+  try{ rows=unpackRows(JSON.parse(b64dec(j.content))); }catch(e){ rows=null; }
+  if(!rows) throw new Error("GitHub 上のファイルを記録として読めませんでした");
+  return {rows, sha:j.sha, missing:false};
+}
+async function ghPut(rows, sha){
+  const body={ message:"weight "+todayStr(), branch:gh.branch,
+               content:b64enc(JSON.stringify(packRows(rows,new Date().toISOString()),null,1)) };
+  if(sha) body.sha=sha;
+  const r=await fetch(ghUrl(),{ method:"PUT",
+    headers:Object.assign({"Content-Type":"application/json"}, ghHeaders()),
+    body:JSON.stringify(body) });
+  if(r.status===409||r.status===422) return {conflict:true};      // 他の端末が先に書いた
+  if(!r.ok) throw new Error(await ghMessage(r));
+  const j=await r.json();
+  return {sha:(j.content&&j.content.sha)||null};
+}
+// 取得 → マージ → 必要なら書き戻す。競合したら1回だけ取り直す。
+async function ghSyncNow(manual){
+  if(!ghConfigured()){ if(manual) ghState("GitHub の owner・リポジトリ・トークンを入れてください。"); return; }
+  if(ghBusy){ if(manual) ghState("同期中です。"); return; }
+  ghBusy=true; ghState("同期中…");
+  try{
+    for(let attempt=0; attempt<2; attempt++){
+      const got=await ghGet();
+      const m=mergeRemote(got.rows, data);
+      data=m.rows; ghSha=got.sha;
+      const merged=rowsKey(data);
+      render();
+      if(!got.missing && rowsKey(got.rows)===merged){       // リモートと同じ＝送る必要なし
+        lastPushed=merged; ghReady=true;
+        ghState(`同期しました（${data.length}件・新規 ${m.added}・更新 ${m.updated}）`); return;
+      }
+      const res=await ghPut(data, ghSha);
+      if(res.conflict) continue;                             // 取り直してもう一度
+      ghSha=res.sha; lastPushed=merged; ghReady=true;
+      ghState(`同期しました（${data.length}件・新規 ${m.added}・更新 ${m.updated}）`); return;
+    }
+    throw new Error("他の端末と競合しました。もう一度お試しください。");
+  }catch(e){
+    ghState("同期できませんでした："+e.message);
+  }finally{ ghBusy=false; }
+}
+// 記録が変わったら少し待って送る（最初の同期が終わるまでは送らない）
+function schedulePush(){
+  if(!ghReady || !ghConfigured()) return;
+  if(rowsKey(data)===lastPushed) return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(async ()=>{
+    if(ghBusy){ schedulePush(); return; }
+    ghBusy=true; ghState("保存中…");
+    try{
+      let res=await ghPut(data, ghSha);
+      if(res.conflict){                                      // 先に書かれていた＝取り直してマージ
+        const got=await ghGet();
+        data=mergeRemote(got.rows, data).rows; ghSha=got.sha; render();
+        res=await ghPut(data, ghSha);
+        if(res.conflict) throw new Error("競合が解消できませんでした");
+      }
+      ghSha=res.sha; lastPushed=rowsKey(data);
+      ghState(`GitHub に保存しました（${data.length}件）`);
+    }catch(e){
+      ghState("保存できませんでした："+e.message);
+    }finally{ ghBusy=false; }
+  }, 1500);
+}
+document.getElementById("ghsync").onclick=()=>ghSyncNow(true);
+
 // グラフを指でなぞると、その日の値を上に出す（離すと期間表示に戻る）
 let hoverX=null;
 (function(){
@@ -763,6 +927,9 @@ function hpCandidates(rawFragment){
   document.getElementById("hint").textContent=
     "取り込めませんでした：JSONとして読めませんでした。受け取った先頭60文字→ "+head;
 })();
+
+// 起動時：GitHub が設定されていれば取りに行く（#hp= の取り込みより後に走らせる）
+ghSyncNow(false);
 </script>
 </body>
 </html>
