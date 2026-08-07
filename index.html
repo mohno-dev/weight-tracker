@@ -592,10 +592,19 @@ function fillSettings(){ document.getElementById("s-h").value=set.h; document.ge
   document.getElementById("s-ghp").value=gh.path;  document.getElementById("s-ghb").value=gh.branch;
   document.getElementById("s-ght").value=gh.token; }
 document.getElementById("save-set").onclick=()=>{
-  set.h=+document.getElementById("s-h").value||DEF_SET.h;
-  set.wmax=+document.getElementById("s-wmax").value||DEF_SET.wmax;
-  set.fmax=+document.getElementById("s-fmax").value||DEF_SET.fmax;
-  set.ffmi=+document.getElementById("s-ffmi").value||DEF_SET.ffmi;
+  // ★type=number は中身が不正だと value が空文字を返す（全角で打った・入力途中など）。
+  //   ここで既定値に落とすと、打ち間違えただけで身長が 170 に戻るような事故になる。
+  //   読み取れない欄は「変更しない」で通し、どの欄が読めなかったかを伝える。
+  const bad=[];
+  const num=(id,cur,label)=>{
+    const v=parseFloat(document.getElementById(id).value);
+    if(isFinite(v)) return v;
+    bad.push(label); return cur;
+  };
+  set.h   =num("s-h",    set.h,    "身長");
+  set.wmax=num("s-wmax", set.wmax, "上限体重");
+  set.fmax=num("s-fmax", set.fmax, "上限体脂肪");
+  set.ffmi=num("s-ffmi", set.ffmi, "目標FFMI");
   set.sc=document.getElementById("s-sc").value.trim()||DEF_SET.sc;
   gh.owner =document.getElementById("s-gho").value.trim();
   gh.repo  =document.getElementById("s-ghr").value.trim()||DEF_GH.repo;
@@ -603,7 +612,10 @@ document.getElementById("save-set").onclick=()=>{
   gh.branch=document.getElementById("s-ghb").value.trim()||DEF_GH.branch;
   gh.token =document.getElementById("s-ght").value.trim();
   storeGh();
-  document.getElementById("hint").textContent="設定を保存しました。";
+  fillSettings();   // 変更しなかった欄を元の値に戻して見せる
+  document.getElementById("hint").textContent = bad.length
+    ? `保存しました（${bad.join("・")} は読み取れなかったので変更していません。半角で入力してください）`
+    : "設定を保存しました。";
   render();
   // 未設定のまま押されたときは、何が足りないかをその場に出す（無反応に見せない）
   // ★既に同期済みなら「取りに行く」のでなく「送る」。ここで ghSyncNow を呼ぶと、
