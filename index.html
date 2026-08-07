@@ -431,7 +431,9 @@ function drawChart(){
     list.forEach(s=>{
       vals=vals.concat(s.pts.map(p=>p.v));
       if(gran!=="d") vals=vals.concat(s.daily.map(p=>p.v));
-      if(s.limit!=null) vals.push(s.limit);
+      // ★上限は軸に含めない。含めると、上限が遠いときに実測が画面の下へ潰れて
+      //   日々の変化が読めなくなる（体重57〜59に対し上限63で、高さの3割しか使わない状態だった）。
+      //   上限線は範囲に入ったとき＝近づいたときだけ現れる。
     });
     let mn=Math.min(...vals), mx=Math.max(...vals);
     if(mn===mx){ mn-=1; mx+=1; }
