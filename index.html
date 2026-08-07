@@ -755,16 +755,31 @@ function mergeRemote(remote, local){
   return {rows:Object.values(by).sort((a,b)=>a.date<b.date?1:-1), added, updated};
 }
 // 保存する形。読むときは素の配列（古い形）も受ける。
-function packRows(rows, iso){
-  return {v:1, updated:iso, rows:[...rows].sort((a,b)=>a.date<b.date?-1:1)};
+// 設定のうち 身長・上限・目標FFMI も一緒に置く（端末ごとに違う値になる意味がないため）。
+// ショートカット名は端末固有なので入れない。トークンは別のキーなので元から入らない。
+const SYNC_SET=["h","wmax","fmax","ffmi"];
+function pickSet(s){
+  const o={}; for(const k of SYNC_SET){ if(s && typeof s[k]==="number" && isFinite(s[k])) o[k]=s[k]; }
+  return o;
+}
+function packRows(rows, iso, s){
+  const o={v:2, updated:iso, rows:[...rows].sort((a,b)=>a.date<b.date?-1:1)};
+  const p=pickSet(s); if(Object.keys(p).length) o.set=p;
+  return o;
 }
 function unpackRows(obj){
   if(Array.isArray(obj)) return obj;
   if(obj && Array.isArray(obj.rows)) return obj.rows;
   return null;
 }
+function unpackSet(obj){
+  if(!obj || Array.isArray(obj) || !obj.set) return null;
+  const p=pickSet(obj.set);
+  return Object.keys(p).length? p : null;
+}
 // 中身が同じかを比べるための正規形（並び順の違いで差があるように見せない）
 function rowsKey(rows){ return JSON.stringify(packRows(rows||[],"").rows); }
+function syncKey(rows, s){ return JSON.stringify({rows:packRows(rows||[],"",s).rows, set:pickSet(s)}); }
 // ---- GitHub 同期（テスト対象・ここまで） ----
 
 const GH_API="https://api.github.com";
@@ -805,14 +820,14 @@ async function ghGet(){
   if(r.status===404) return {rows:[], sha:null, missing:true};   // 初回＝ファイルがまだ無い
   if(!r.ok) throw new Error(await ghMessage(r));
   const j=await r.json();
-  let rows;
-  try{ rows=unpackRows(JSON.parse(b64dec(j.content))); }catch(e){ rows=null; }
+  let rows=null, rset=null;
+  try{ const o=JSON.parse(b64dec(j.content)); rows=unpackRows(o); rset=unpackSet(o); }catch(e){ rows=null; }
   if(!rows) throw new Error("GitHub 上のファイルを記録として読めませんでした");
-  return {rows, sha:j.sha, missing:false};
+  return {rows, set:rset, sha:j.sha, missing:false};
 }
 async function ghPut(rows, sha){
   const body={ message:"weight "+todayStr(), branch:gh.branch,
-               content:b64enc(JSON.stringify(packRows(rows,new Date().toISOString()),null,1)) };
+               content:b64enc(JSON.stringify(packRows(rows,new Date().toISOString(),set),null,1)) };
   if(sha) body.sha=sha;
   const r=await fetch(ghUrl(),{ method:"PUT",
     headers:Object.assign({"Content-Type":"application/json"}, ghHeaders()),
@@ -832,11 +847,15 @@ async function ghSyncNow(manual){
       const got=await ghGet();
       const m=mergeRemote(got.rows, data);
       data=m.rows; ghSha=got.sha;
-      const merged=rowsKey(data);
+      // 設定（身長・上限・目標FFMI）もリモートを採る。端末ごとに違う値になる意味がないため。
+      let sc=false;
+      if(got.set){ for(const k of SYNC_SET){ if(got.set[k]!=null && set[k]!==got.set[k]){ set[k]=got.set[k]; sc=true; } } }
+      if(sc) fillSettings();
+      const merged=syncKey(data, set);
       render();
-      if(!got.missing && rowsKey(got.rows)===merged){       // リモートと同じ＝送る必要なし
+      if(!got.missing && syncKey(got.rows, got.set)===merged){   // リモートと同じ＝送る必要なし
         lastPushed=merged; ghReady=true;
-        ghState(`同期しました（${data.length}件・新規 ${m.added}・更新 ${m.updated}）`); return;
+        ghState(`同期しました（${data.length}件・新規 ${m.added}・更新 ${m.updated}${sc?"・設定も反映":""}）`); return;
       }
       const res=await ghPut(data, ghSha);
       if(res.conflict) continue;                             // 取り直してもう一度
@@ -851,7 +870,7 @@ async function ghSyncNow(manual){
 // 記録が変わったら少し待って送る（最初の同期が終わるまでは送らない）
 function schedulePush(){
   if(!ghReady || !ghConfigured()) return;
-  if(rowsKey(data)===lastPushed) return;
+  if(syncKey(data, set)===lastPushed) return;
   clearTimeout(pushTimer);
   pushTimer=setTimeout(async ()=>{
     if(ghBusy){ schedulePush(); return; }
@@ -864,7 +883,7 @@ function schedulePush(){
         res=await ghPut(data, ghSha);
         if(res.conflict) throw new Error("競合が解消できませんでした");
       }
-      ghSha=res.sha; lastPushed=rowsKey(data);
+      ghSha=res.sha; lastPushed=syncKey(data, set);
       ghState(`GitHub に保存しました（${data.length}件）`);
     }catch(e){
       ghState("保存できませんでした："+e.message);
